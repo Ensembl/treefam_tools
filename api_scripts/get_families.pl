@@ -21,7 +21,7 @@ my $seq = 0;
 my $tree = 0;
 my $help;
 
-my $families_file = shift || "families.txt";
+my $families_file = "families.txt";
 
 my $result = GetOptions ("all" => \$all,    # numeric
                                "hmm"   => \$hmm,      
@@ -120,7 +120,7 @@ sub usage {
 
    print STDERR (
       $message,
-      "usage: $command file -all -hmm -seq -tree -aln\n" .
+      "usage: $command -all -hmm -seq -tree -aln\n" .
       "       -all: gets hmm, alignment, sequences (protein+cds), tree for each family (default option) \n" .
       "       -hmm:  gets hmm for each family\n" .
       "       -seq: gets sequences (protein+cds) for each family\n" .
