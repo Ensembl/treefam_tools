@@ -10,12 +10,15 @@ git clone https://github.com/treefam/treefam_tools.git
 cd treefam_tools/
 
 #Second, you need to download the TreeFam HMM file:
-wget http://www.treefam.org/download/TreeFam.hmm.tar.gz hmm_lib/
+mkdir hmm_lib
+wget http://dev.treefam.org/static/download/treefam9.hmm3.tar.gz
+mv treefam9.hmm3.tar.gz hmm_lib/
 cd hmm_lib/
-tar -xzvf TreeFam.hmm.tar.gz
+tar -xzvf treefam9.hmm3.tar.gz
 
 #Third you need to construct the binary compressed datafiles for hmmscan.
-hmmpress TreeFam.hmm
+mv treefam9.hmm3 TreeFam
+hmmpress TreeFam
 
 #Example:
 perl treefam_scan.pl -fasta example/example_small.fasta -dir example/hmm_lib/ > example/output.tab

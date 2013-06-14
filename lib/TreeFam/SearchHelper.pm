@@ -20,6 +20,8 @@ use strict;
 use warnings;
 use TreeFam::HomologyHelper;
 
+print "Mateus testing\n";
+
 sub search_family_with_id{
 	my ($arg_ref) = @_;
 	my $genetree_adaptor= $arg_ref->{'genetree_adaptor'};
@@ -85,8 +87,36 @@ sub search_ext_ids{
 	}	
 	return (\%hits4id,$further_search_id, $db_type);
 }
+
+
+#------------------------------------------------------------------------------------
+#------------------------------ MATEUS ----------------------------------------------
+#------------------------------------------------------------------------------------
 sub get_member_by_xref{
-	my ($dbh,$db,$to_search, $column) = (@_);
+	my ($arg_ref)		= @_;
+	my $member_adaptor	= $arg_ref->{'member_adaptor'};
+	my $to_search		= $arg_ref->{'to_search'};
+	my $limit 			= $arg_ref->{'limit'};
+	my $extID2seq_sth_member;
+	my $extID2seq_sth;
+
+	$extID2seq_sth_member = $member_adaptor->prepare('select * from xrefID2Sequence where external_db_id = ? or external_db_id_name = ? limit ?');
+	$extID2seq_sth_member->bind_param(1,$to_search);
+	$extID2seq_sth_member->bind_param(2,$to_search);
+	$extID2seq_sth_member->bind_param(3,$limit);
+	$extID2seq_sth = $extID2seq_sth_member ;
+
+	$extID2seq_sth->execute() or die "SQL Error: $DBI::errstr\n";
+	#my $sequences = $extID2seq_sth->fetchall_arrayref();
+	while ( my ($extID,$extName,$dbname,$gtID,$gtName,$description) = $extID2seq_sth->fetchrow_array())
+	{
+		print "$extID\t$extName\t$dbname\t$gtID\t$gtName\t$description\n";
+	}
+}
+
+=begin
+	#my ($dbh,$db,$to_search, $column) = (@_);
+
 	my $extID2seq_sth_member;
 	my $extID2seq_sth_ext;
 	my $extID2seq_sth;
@@ -103,13 +133,16 @@ sub get_member_by_xref{
 	   	my @line_array;
 		my %line_hash = ("ExtID"=>$extID,"extName"=>$extName,"db"=>$dbname,"memberID"=>$memberID,"gtID"=>$gtID,"gtName"=>$gtName, "description" =>$description);	
 		# try to see how long it takes to get member attributes as well
-		my $member_adaptor = $db->get_MemberAdaptor;
-		my $member = $member_adaptor->fetch_by_dbID($memberID);
-		return defined($member)? $member : undef;
+		#my $member_adaptor = $db->get_MemberAdaptor;
+		#my $member = $member_adaptor->fetch_by_dbID($memberID);
+		#return defined($member)? $member : undef;
 
 	}
 	return undef;
-}
+=cut
+#------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------
+
 sub get_family_by_xref{
 	my ($arg_ref) = @_;
 	my $db_adaptor = $arg_ref->{'db_adaptor'};
@@ -143,6 +176,10 @@ sub check_valid_family{
 		my $genetree_adaptor = $arg_ref->{'genetree_adaptor'};
 		my $to_search = $arg_ref->{'to_search'};
 		my $tree;
+		if($to_search =~ /^TF\d+$/){
+			return $to_search;
+		}
+		
 		if($to_search =~ /^\d+$/){
 			$tree = &search_family_with_id({"genetree_adaptor" => $genetree_adaptor, "to_search" => $to_search});
 		}
@@ -376,8 +413,7 @@ sub search_xref_families_hits{
 		$extID2seq_sth_member = $member_adaptor->prepare('select * from xrefID2Family where gene_tree_stable_id = ?');
 		$extID2seq_sth_member->bind_param(1,$to_search);
 		$extID2seq_sth = $extID2seq_sth_member ;
-	}
-	else{
+	}else{
 		die "need to know which column to search in xref\n";
 	}
     

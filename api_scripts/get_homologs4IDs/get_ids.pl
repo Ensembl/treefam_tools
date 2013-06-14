@@ -8,10 +8,6 @@ use strict;
 use JSON;
 use warnings;
 
-use TreeFam::HomologyHelper;
-use TreeFam::SearchHelper;
-use TreeFam::OtherFunctions;
-
 
 my %opts;
 my $all = 1;

@@ -15,6 +15,7 @@
 #     REVISION: ---
 #===============================================================================
 package TreeFam::HomologyHelper;
+use IO::String;
 
 use strict;
 use warnings;
@@ -187,7 +188,22 @@ sub encode_homologies{
   return \@results_array;
 }
 
+sub get_hmm{
+	my ($arg_ref) = @_;
+	my $genetree_adaptor = $arg_ref->{'genetree_adaptor'};
+	my $to_search = $arg_ref->{'to_search'};
+	my $hmm_search = $genetree_adaptor->prepare('select HMM from HMMs where fam_id = ?');
+	$hmm_search->bind_param(1,$to_search);
 
+	$hmm_search->execute() or die "SQL Error: $DBI::errstr\n";
+	#my $sequences = $extID2seq_sth->fetchall_arrayref();
+	my $hmm_text;
+	while ( ($hmm_text) = $hmm_search->fetchrow_array()){
+		last;
+	}
+	print $hmm_text;
+	return $hmm_text;
+}
 sub get_homologs_for_family_orthoxml{
 	my ($arg_ref) = @_;
 	my $genetree_object = $arg_ref->{'genetree_object'};
@@ -210,7 +226,10 @@ sub get_homologs_for_family_orthoxml{
   	$w->finish(); #YOU MUST CALL THIS TO WRITE THE FINAL TAG
 	if($write_type eq "string"){
   		my $xml_scalar_ref = $string_handle->string_ref();
-		return defined($xml_scalar_ref)?$xml_scalar_ref:undef;	
+		my %temp_hash = ("orthoxml_string" => $xml_scalar_ref);
+		my @tmp_array ;
+		push(@tmp_array, \%temp_hash);
+		return (scalar(@tmp_array))?\@tmp_array :undef;	
 	}
 	elsif($write_type eq "file"){
 		$file_handle->close();
@@ -225,4 +244,25 @@ sub check_existence {
 	my ($object,$type) = shift;
 	if(!$object){ die "Could not get member object for $type. Stopping\n"}
 }
+
+sub get_pairwise_homologs{
+	my ($arg_ref) = @_;
+	my $speciesA = $arg_ref->{'speciesA'};
+	my $speciesB = $arg_ref->{'speciesB'};
+	my $genomedb_adaptor = $arg_ref->{'genomedb_adaptor'};
+	print "pair\tspecies_A=$speciesA\tspecies_B=$speciesB\n";
+	my $pairwise = $genomedb_adaptor->prepare('SELECT file FROM pairwise_homology WHERE species_A=? and species_B=?');
+	print "SELECT file FROM pairwise_homology WHERE species_A=$speciesA and species_B=$speciesB\n";
+	$pairwise->bind_param(1,$speciesA);
+	$pairwise->bind_param(2,$speciesB);
+
+	$pairwise->execute() or die "SQL Error: $DBI::errstr\n";
+
+	 my ($BLOB) = $pairwise->fetchrow_array();
+    #print $BLOB;
+	return $BLOB;
+	
+}
+
+
 1;

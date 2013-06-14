@@ -1,6 +1,6 @@
 #!/usr/bin/env perl
 
-# $Id: pfam_scan.pl 6938 2012-05-30 11:01:00Z jm14 $
+# $Id: treefam_scan.pl 6938 2012-05-30 11:01:00Z jm14 $
 
 use strict;
 use warnings;
@@ -78,8 +78,8 @@ die qq(FATAL: can't find file "$fasta")
 #             -s "$dir/$hmmlib.dat" );
 #}
 
-die qq(FATAL: can't use E-value or bit score threshold with Pfam-B searches; Pfam-B searches use a default cut_off of 0.001)
-  if ( ( $e_seq or $e_dom or $b_seq or $b_dom ) and not $pfamA ); 
+#die qq(FATAL: can't use E-value or bit score threshold with Pfam-B searches; Pfam-B searches use a default cut_off of 0.001)
+#  if ( ( $e_seq or $e_dom or $b_seq or $b_dom ) and not $pfamA ); 
 
 die qq(FATAL: can't use E-value and bit score threshold together)
   if ( ( $e_seq and ( $b_seq or $b_dom ) ) or 
@@ -89,13 +89,13 @@ die qq(FATAL: can't use E-value and bit score threshold together)
 die qq(FATAL: output file "$outfile" already exists)
   if ( $outfile and -s $outfile );
 
-if ( $as ) {
-  die qq("FATAL: "-as" option only works on Pfam-A families")
-    unless $pfamA;
+#if ( $as ) {
+#  die qq("FATAL: "-as" option only works on Pfam-A families")
+#    unless $pfamA;
 
   #die qq(FATAL: can't find "active_site.dat" in "$dir")
   #  unless -s "$dir/active_site.dat";
-}
+#}
 
 #-------------------------------------------------------------------------------
 
@@ -147,36 +147,29 @@ exit;
 sub help {
   print STDERR <<EOF;
 
-pfam_scan.pl: search a FASTA file against a library of Pfam HMMs
+treefam_scan.pl: search a FASTA file against a library of TreeFam HMMs
 
-Usage: pfam_scan.pl -fasta <fasta_file> -dir <directory location of Pfam files>
+Usage: treefam_scan.pl -fasta <fasta_file> -dir <directory location of TreeFam files>
 
 Additonal options:
 
   -h              : show this help
   -outfile <file> : output file, otherwise send to STDOUT
-  -clan_overlap   : show overlapping hits within clan member families (applies to Pfam-A families only)
+  -clan_overlap   : show overlapping hits within clan member families (applies to TreeFam-A families only)
   -align          : show the HMM-sequence alignment for each match
-  -e_seq <n>      : specify hmmscan evalue sequence cutoff for Pfam-A searches (default Pfam defined)
-  -e_dom <n>      : specify hmmscan evalue domain cutoff for Pfam-A searches (default Pfam defined)
-  -b_seq <n>      : specify hmmscan bit score sequence cutoff for Pfam-A searches (default Pfam defined)
-  -b_dom <n>      : specify hmmscan bit score domain cutoff for Pfam-A searches (default Pfam defined)
-  -pfamB          : search against Pfam-B* HMMs (uses E-value sequence and domain cutoff 0.001),  
-                    in addition to searching Pfam-A HMMs
-  -only_pfamB     : search against Pfam-B* HMMs only (uses E-value sequence and domain cutoff 0.001)
-  -as             : predict active site residues for Pfam-A matches
+  -e_seq <n>      : specify hmmscan evalue sequence cutoff for TreeFam-A searches (default TreeFam defined)
+  -e_dom <n>      : specify hmmscan evalue domain cutoff for TreeFam-A searches (default TreeFam defined)
+  -b_seq <n>      : specify hmmscan bit score sequence cutoff for TreeFam-A searches (default TreeFam defined)
+  -b_dom <n>      : specify hmmscan bit score domain cutoff for TreeFam-A searches (default TreeFam defined)
+  -as             : predict active site residues for TreeFam-A matches
   -json [pretty]  : write results in JSON format. If the optional value "pretty" is given,
                     the JSON output will be formatted using the "pretty" option in the JSON
                     module
   -cpu <n>        : number of parallel CPU workers to use for multithreads (default all)
 
-  * Please note that the Pfam-B HMMs are of much lower quality than
-    Pfam-A HMMs, and matches to Pfam-B families should always be treated
-    cautiously.
-
   For more help, check the perldoc:
 
-      shell\% perldoc pfam_scan.pl
+      shell\% perldoc treefam_scan.pl
 
 EOF
   exit;
@@ -187,19 +180,19 @@ EOF
 
 =head1 NAME
 
-pfam_scan.pl -- Search protein sequences against the Pfam HMM library
+treefam_scan.pl -- Search protein sequences against the TreeFam HMM library
 
 =head1 SYNOPSIS
 
-pfam_scan.pl [options] -fasta <fasta_file> -dir <Pfam_data_file_dir>
+treefam_scan.pl [options] -fasta <fasta_file> -dir <TreeFam_data_file_dir>
 
 =head1 OPTIONS
 
 =over
 
-=item B<-dir> I<Pfam_data_file_dir>
+=item B<-dir> I<TreeFam_data_file_dir>
 
-Directory containing Pfam data files [required]
+Directory containing TreeFam data files [required]
 
 =item B<-fasta> I<fasta_file>
 
@@ -211,27 +204,27 @@ Write output to C<output_file> [default: STDOUT]
 
 =item B<-e_seq>
 
-Sequence E-value cut-off [default: use Pfam GA cutoff]
+Sequence E-value cut-off [default: use TreeFam GA cutoff]
 
 =item B<-e_dom> 
 
-Domain E-value cut-off [default: use Pfam GA cutoff]
+Domain E-value cut-off [default: use TreeFam GA cutoff]
 
 =item B<-b_seq>
 
-Sequence bits score cut-off [default: use Pfam GA cutoff]
+Sequence bits score cut-off [default: use TreeFam GA cutoff]
 
 =item B<-b_dom>
 
-Domain bits score cut-off [default: use Pfam GA cutoff]
+Domain bits score cut-off [default: use TreeFam GA cutoff]
 
 =item B<-pfamB>
 
-Search against Pfam-B HMMs [default: false]
+Search against TreeFam-B HMMs [default: false]
 
 =item B<-only_pfamB>
 
-Search against Pfam-B HMMs only [default: false]
+Search against TreeFam-B HMMs only [default: false]
 
 =item B<-clan_overlap>
 
@@ -243,7 +236,7 @@ Show alignment snippets in results [default: false]
 
 =item B<-as>
 
-Search for active sites on Pfam-A matches [default: false]
+Search for active sites on TreeFam-A matches [default: false]
 
 =item B<-json> [I<pretty>]
 
@@ -264,11 +257,11 @@ mandatory. You cannot specify both an E-value and bits score threshold.
 
 =head1 OVERVIEW
 
-C<pfam_scan.pl> is a script for searching one or more protein sequences against the
-library of HMMs from Pfam. It requires a local copy of the Pfam data files, which 
-can be obtained from the Pfam FTP area:
+C<treefam_scan.pl> is a script for searching one or more protein sequences against the
+library of HMMs from TreeFam. It requires a local copy of the TreeFam data files, which 
+can be obtained from the TreeFam download area:
 
-  ftp://ftp.sanger.ac.uk/pub/database/Pfam/current_release/
+  http://www.treefam.org/download
 
 You must also have the HMMER3 binaries installed and their locations given by your
 C<PATH> environment variable. You can download the HMMER3 package at:
@@ -282,27 +275,18 @@ The output format is:
 
 Example output (with -pfamB, -as options):
 
-  Q5NEL3.1      2    224      2    227 PB013481  Pfam-B_13481      Pfam-B     1   184   226    358.5  1.4e-107  NA NA
-  O65039.1     38     93     38     93 PF08246   Inhibitor_I29     Domain     1    58    58     45.9   2.8e-12   1 No_clan
-  O65039.1    126    342    126    342 PF00112   Peptidase_C1      Domain     1   216   216    296.0   1.1e-88   1 CL0125   predicted_active_site[150,285,307]
+  Q5NEL3.1      2    224      2    227 PB013481  TreeFam_13481      TreeFam     1   184   226    358.5  1.4e-107  NA NA
+  O65039.1     38     93     38     93 PF08246   Inhibitor_I29     TreeFam     1    58    58     45.9   2.8e-12   1 No_clan
+  O65039.1    126    342    126    342 PF00112   Peptidase_C1      TreeFam     1   216   216    296.0   1.1e-88   1 CL0125   predicted_active_site[150,285,307]
 
 Most of these values are derived from the output of I<hmmscan> (see HMMER3
 documentation for details). The significance value is 1 if the bit score for a
 hit is greater than or equal to the curated gathering threshold for the
-matching family, 0 otherwise. Pfam-B hits are always assigned a significance
-value of "NA", since Pfam-B families do not have curated thresholds and the
-value is therefore meaningless. 
-
-=head1 REFERENCES
-
-Active site residues are predicted using the method described in the publication: 
-
-Mistry J., Bateman A., Finn R.D. "Predicting active site residue annotations in 
-the Pfam database." BMC Bioinformatics. 2007;8:298. PMID:17688688.
+matching family, 0 otherwise.
 
 =head1 AUTHORS
 
-Jaina Mistry (jm14@sanger.ac.uk), John Tate (jt6@sanger.ac.uk)
+Fabian Schreiber (fs@ebi.ac.uk), Mateus Patricio (mateus@ebi.ac.uk), Jaina Mistry (jm14@sanger.ac.uk), John Tate (jt6@sanger.ac.uk)
 
 =cut
 

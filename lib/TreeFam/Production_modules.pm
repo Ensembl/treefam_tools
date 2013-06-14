@@ -145,7 +145,7 @@ my %species_tree_counts = (
                 "Ecdysozoa" => 38,
                 "Arthropoda" => 27,
                 "Glires" => 7,
-                "non-Mammalia" => 16,
+                "non-Mammals" => 8,
                 "Vertebrata" => 56,
                 "non-Vertebrata" => 2,
                 "Chordata" => 58,
@@ -182,7 +182,7 @@ sub traverse_species_tree {
     my ($found_species,$found_genes) = (0,0); 
     foreach my $species(keys(%{$species_count})){
         my $classification = $species_count->{$species}{'classification'};
-        #print "has classification: $classification\n";
+        print "has classification: $classification\n";
         my @matches = grep(/$node_name/,split(" ",$classification));
         if(scalar(@matches)){
             #print "Found matches: for $node_name \n";
@@ -195,12 +195,17 @@ sub traverse_species_tree {
     $no_species = (exists $species_tree_counts->{$node_name})?$species_tree_counts->{$node_name}: 0;
     print "$node_name: species (".$found_species." / $no_species), genes: (".$found_genes."/$no_genes)\n";  
 
-    my $missing_species = ($found_genes)?$no_species - $found_species:0;
+    my $missing_species = ($found_species)?$no_species - $found_species:0;
     my $missing_genes = ($found_genes)?$no_genes - $found_genes:0;
+	
+	# map node names? 
+	$node_name = ($node_name eq 'non-Mammals')?'Frogs/Lizards/Birds':$node_name;
+	$node_name = ($node_name eq 'non-Vertebrata')?'Tunicates':$node_name;
+
    	my $result = { name=>$node_name , 
                     species_total=>int($no_species),
-                    species_presence=>($found_species)?[int($missing_species),int($found_species)]: [1,0],
-                    gene_presence=> ($found_genes)?[int($missing_genes), int($found_genes)]: [1,0],
+                    species_presence=>($found_species)?[int($missing_species),int($found_species)]: [$no_species,0],
+                    gene_presence=> ($found_genes)?[int($missing_genes), int($found_genes)]: [$no_genes,0],
 			};		
 	if ( my @children = @{ $node->get_children } ) {
         print "traversing child\n";
@@ -225,7 +230,7 @@ sub newick2json{
 	my $treefam_name = $arg_ref->{treefam_name};
 	my $registry = $arg_ref->{registry};
 	my $newick_tree = $arg_ref->{treeNhx};
-        my $input_tree = "$treefam_name.in.newick";
+    my $input_tree = "$treefam_name.in.newick";
 
     open my $nw_tree_out, ">", $input_tree or die "Could not open $input_tree\n";
     print {$nw_tree_out} $newick_tree."\n";
@@ -234,7 +239,6 @@ sub newick2json{
         warn "[newick2json] Problem saving tree to file $input_tree\n";
         return 0;
     } 
-	print "saved tree to $input_tree\n";
 my $output_tree = "$treefam_name.output.tre";
 my $taxon2species_file = "taxid2species.txt";
 my $taxon2color_file = "species_info.table";
@@ -255,7 +259,7 @@ foreach (@taxids2colors){
     chomp;
     #print "Have: $_\n";
     my ($taxid,$species_name,$common_name,$color) = split("\t",$_);
-    #print "Found $taxid,$species_name,$common_name,$color\n";
+    print "Found $taxid,$species_name,$common_name,$color\n";
 	$taxid2color_hash{$taxid} = ucfirst($color);
 }
 
@@ -278,7 +282,6 @@ if(!read_tree_io({"input_tree"=> $input_tree,
 	die "could not read tree $input_tree\n";
 }
 my @terminal_ids = keys(%leafNodesMapping);
-print "TERMINALS: ".join(",",@terminal_ids)."\n";
 my %seqIDLength;
 
 # get color codes
@@ -318,6 +321,7 @@ my $result = traverse({
     #$superhash->{"json_tree"} = JSON->new->pretty->encode($result);
     $superhash->{"json_tree"} = JSON->new->encode($result);
     unlink($output_tree) if -e $output_tree;
+	unlink($input_tree) if -e $input_tree;
     return 1;
 
 sub traverse {
@@ -335,15 +339,17 @@ sub traverse {
 
     foreach my $pfam_hit(keys(%{$sequence_href->{$node_name}{pfam_hits}})){
             #my $ratio = $ext_counts->{"pfam_counts"}{$pfam_hit} / keys(%{$sequence_href});
-                my ($id,$name, $a_start,$a_end,$evalue)  =  ($sequence_href->{$node_name}{pfam_hits}{$pfam_hit}{hmm_name},
-                                                            $sequence_href->{$node_name}{pfam_hits}{$pfam_hit}{description},
-                                                            $sequence_href->{$node_name}{pfam_hits}{$pfam_hit}{alignment_start},
-                                                            $sequence_href->{$node_name}{pfam_hits}{$pfam_hit}{alignment_end},
-                                                            $sequence_href->{$node_name}{pfam_hits}{$pfam_hit}{evalue} );
+           		foreach my $domain_hit(keys(%{$sequence_href->{$node_name}{pfam_hits}{$pfam_hit}})){
+                	my ($id,$name, $a_start,$a_end,$evalue)  =  ($sequence_href->{$node_name}{pfam_hits}{$pfam_hit}{$domain_hit}{hmm_name},
+                                                            $sequence_href->{$node_name}{pfam_hits}{$pfam_hit}{$domain_hit}{description},
+                                                            $sequence_href->{$node_name}{pfam_hits}{$pfam_hit}{$domain_hit}{alignment_start},
+                                                            $sequence_href->{$node_name}{pfam_hits}{$pfam_hit}{$domain_hit}{alignment_end},
+                                                            $sequence_href->{$node_name}{pfam_hits}{$pfam_hit}{$domain_hit}{evalue} );
             print "Hit: $id,$name, $a_start,$a_end,$evalue\n";
             my $temp_hash = {domain_start=>$a_start, domain_stop=>$a_end, evalue=> $evalue, name=>$name, id => $id};
                push(@domains_for_seq, $temp_hash);
-        } 
+        	}
+		} 
     }
  	my $result = { name=>(exists $mapBack2ID{$node_name})? $mapBack2ID{$node_name}:$node_name , 
 					duplication=> (exists $allNodesMapping{$node_name}{D} && $allNodesMapping{$node_name}{D} eq "Y")?"Y":"N", 
@@ -365,7 +371,7 @@ sub traverse {
                     $result->{seq_length} = $seqIDLength->{$node_name} if exists $seqIDLength->{$node_name}; 
 		            #print "looking for color for ".$allNodesMapping{$node_name}{T}." is ".$ID2Color->{$allNodesMapping{$node_name}{T}}."\n";	
                     $result->{color} = $taxid2color_href->{$allNodesMapping{$node_name}{T}} if exists $taxid2color_href->{$allNodesMapping{$node_name}{T}}; 
-                    $result->{go} = $sequence_href->{$node_name}{go_hits} if exists $sequence_href->{$node_name}{go_hits};
+                    #$result->{go} = $sequence_href->{$node_name}{go_hits} if exists $sequence_href->{$node_name}{go_hits};
 	
 	
 	if ( my @children = @{ $node->get_children } ) {
@@ -393,13 +399,16 @@ sub read_tree_io{
 	my $mapBack2ID   = $arg_ref->{mapBack2ID};
 	my %alreadyMapped;
 	#my $temp_tree = $treefam_id."temp_tree.nhx";
-	my $in = Bio::TreeIO->new( '-format' => 'nhx', '-file' => $input_tree );
+	print "Reading tree from $input_tree\n";
+    my $in = Bio::TreeIO->new( '-format' => 'nhx', '-file' => $input_tree );
 	while( my $tree = $in->next_tree ) {
 		my @nodes = $tree->get_nodes();
-		#print "Found ".scalar(@nodes)." nodes in total\n";
+		print "Found ".scalar(@nodes)." nodes in total\n";
 		die "Could not get nodes from tree" if !scalar(@nodes);
 		foreach my $node(@nodes){
-			if($node->is_Leaf){
+		    print "node_name is ".$node->id."  ";
+            if($node->is_Leaf){
+                print "\tleaf\n";
 				my $name = $node->id;
 				my @tags = $node->get_all_tags;
 				foreach(@tags){
@@ -412,6 +421,7 @@ sub read_tree_io{
 			# internal node
 			# need to replace ids
 			else{
+                print "\tinner node\n";
 				my $name = $node->id;
 				next if !defined $name || $name eq "";
 				my @tags = $node->get_all_tags;
@@ -544,7 +554,12 @@ sub get_sequences{
     #$c->{'numSpecies'} = keys(%species_count);
     foreach(@$all_leaves){ 
         $species_count->{$_->taxon->name}{'count'} += 1;
-        $species_count->{$_->taxon->name}{'classification'} = $_->taxon->classification;
+		# grep entry from file
+		my $grep_line = "grep ".$_->taxon->taxon_id." id2classification.txt";
+		my $grepped_classification = `$grep_line`;
+		print "grep ".$_->taxon->taxon_id." id2classification.txt\n";
+		chomp($grepped_classification);
+        $species_count->{$_->taxon->name}{'classification'} = $grepped_classification;
     }
     $c->{'numSpecies'} = keys(%{$species_count});
     $c->{'numSequences'} = scalar(@{$all_leaves});
@@ -605,19 +620,21 @@ sub get_sequence_annotations{
         push(@seq_array, $ensembl_prot_id);
         push(@seq_array, (exists $sequences_hash->{$ensembl_prot_id}{"hmmer_hits"} && $sequences_hash->{$ensembl_prot_id}{"hmmer_hits"} ne '')?$sequences_hash->{$ensembl_prot_id}{"hmmer_hits"}: "No hits" );
         if(exists $sequences_hash->{$ensembl_prot_id}{"pfam_hits"}){
-                #print "$ensembl_prot_id has ".keys(%{$sequences_hash->{$ensembl_prot_id}{"pfam_hits"}})." Pfam hits. \n";
+                print "$ensembl_prot_id has ".keys(%{$sequences_hash->{$ensembl_prot_id}{"pfam_hits"}})." Pfam hits. \n";
                 foreach my $acc(keys(%{$sequences_hash->{$ensembl_prot_id}{"pfam_hits"}})){
-                    #print "$acc hit has ".$ext_counts->{'pfam_counts'}{$acc}." other sequences (total: ".keys(%{$sequences_hash}).")....";
-                    my $ratio = $ext_counts->{"pfam_counts"}{$acc} / keys(%{$sequences_hash});
-                    if ( $ext_counts->{"pfam_counts"}{$acc} && $ratio < 0.05){
-                        #print "SKIP  this entry (ratio: $ratio) \n";
-                        #print "delete this entry ";
-                        delete($sequences_hash->{$ensembl_prot_id}{"pfam_hits"}{$acc});
-                    }
-                    else{
-                        #print "\n";
-                        push(@pfam_hits, $sequences_hash->{$ensembl_prot_id}{"pfam_hits"}{$acc}{"description"});
-                    }
+                	foreach my $domain_hit(keys(%{$sequences_hash->{$ensembl_prot_id}{"pfam_hits"}{$acc}})){
+                    	print "$acc hit has ".$ext_counts->{'pfam_counts'}{$acc}." other sequences (total: ".keys(%{$sequences_hash}).")....";
+                    	my $ratio = $ext_counts->{"pfam_counts"}{$acc} / keys(%{$sequences_hash});
+                    	if ( $ext_counts->{"pfam_counts"}{$acc} && $ratio < 0.05){
+                       		print "SKIP  this entry (ratio: $ratio) \n";
+                        	print "delete this entry ";
+                        	#delete($sequences_hash->{$ensembl_prot_id}{"pfam_hits"}{$acc});
+                    	}
+                    	else{
+                        	print "\n";
+                        	push(@pfam_hits, $sequences_hash->{$ensembl_prot_id}{"pfam_hits"}{$acc}{$domain_hit}{"description"});
+                    	}
+					}
                 }
         }
         
@@ -637,7 +654,7 @@ sub get_sequence_annotations{
         #push(@seq_array, $hgnc_hits_string);
         if(!exists($sequences_hash->{$ensembl_prot_id}{"description"}) ||  !defined($sequences_hash->{$ensembl_prot_id}{"description"}) || $sequences_hash->{$ensembl_prot_id}{"description"} eq ''){
             print "no description for $ensembl_prot_id\n";
-            push(@seq_array, "NaN");
+            push(@seq_array, "No description");
         }
         else{
             push(@seq_array, $sequences_hash->{$ensembl_prot_id}{"description"});
@@ -680,11 +697,11 @@ sub get_family_annotations{
        my %wikigene_hits;
         use Data::Dumper;
         #print Dumper $sequences_hash->{$seq}{'wikigene_hits'};
-        #print "WIKIGENE: ".keys(%{$sequences_hash->{$seq}{'wikigene_hits'}})." entries\n";
+        print "WIKIGENE: ".keys(%{$sequences_hash->{$seq}{'wikigene_hits'}})." entries\n";
         if(keys(%{$sequences_hash->{$seq}{'wikigene_hits'}})){
             foreach my $wikigene_hit(keys(%{$sequences_hash->{$seq}->{wikigene_hits}})){
                 $wikigene_hits{$wikigene_hit} = 1;
-         #   print "WIKIGENE: add $wikigene_hit\n";
+            print "WIKIGENE: add $wikigene_hit\n";
             }
         }
         # HGNC
@@ -694,12 +711,18 @@ sub get_family_annotations{
             }
         }
         # PFAM
+        # to avoid counting multiple domains for the same sequence
+        my %domain_per_sequence;
         if(keys(%{$sequences_hash->{$seq}{'pfam_hits'}})){
             foreach my $pfam_hit(keys(%{$sequences_hash->{$seq}{pfam_hits}})){
-                $pfam_hits{$pfam_hit}{count}++;
-                $pfam_hits{$pfam_hit}{id} = $sequences_hash->{$seq}{pfam_hits}{$pfam_hit}{hmm_name};
-                $pfam_hits{$pfam_hit}{name} = $sequences_hash->{$seq}{pfam_hits}{$pfam_hit}{description};
-            }
+            	foreach my $domain_hit(keys(%{$sequences_hash->{$seq}{pfam_hits}{$pfam_hit}})){
+                	$pfam_hits{$pfam_hit}{id} = $sequences_hash->{$seq}{pfam_hits}{$pfam_hit}{$domain_hit}{hmm_name};
+                	$pfam_hits{$pfam_hit}{name} = $sequences_hash->{$seq}{pfam_hits}{$pfam_hit}{$domain_hit}{description};
+                	$pfam_hits{$pfam_hit}{count}++ if !exists $domain_per_sequence{$seq}{$pfam_hits{$pfam_hit}{name}};
+            		print "PFAM: count: ".$pfam_hits{$pfam_hit}{count}." id: ".$pfam_hits{$pfam_hit}{id}." name: ".$pfam_hits{$pfam_hit}{name}."\n"  ;
+					$domain_per_sequence{$seq}{$pfam_hits{$pfam_hit}{name}} = 1;
+				}
+			}
         }
         my @temp_hgnc_array;
         foreach my $id(keys(%hgnc_hits)){
@@ -838,7 +861,7 @@ sub get_go_hits {
         #print "fetched $_\n";    
         #my @array = split(/\t/,$_);
         #my ($ensID,$startA,$endA,$startB,$endB,$acc,$name,$type,$o1,$o2,$o3,$bitscore,$evalue,$o4,$clan) = split(/\s+/,$_);
-        #print "$acc,$go_id,$go_name,$go_definition,$go_evidence,$go_namespace\n";
+        print "$acc,$go_id,$go_name,$go_definition,$go_evidence,$go_namespace\n";
         #my $no_seq = exists $go_counts{$acc}? $go_counts{$acc}:1;
         $go_hits{$no_seq}{go_id} = $go_id;
         $go_hits{$no_seq}{go_name} = $go_name;
@@ -868,6 +891,7 @@ sub get_pfam_hits {
     my %wikigene_hits;
     ### Parse
     my %pfam_hits;
+	 
 	while ( my ($ensID,$startA,$endA,$startB,$endB,$acc,$name,$type,$o1,$o2,$o3,$bitscore,$evalue,$o4,$clan) = $extID2seq_sth->fetchrow_array() ){
     #my $grep_command = "grep \"$id\" $file_to_search";
     #my @result_lines = `$grep_command`;
@@ -878,17 +902,18 @@ sub get_pfam_hits {
         #my @array = split(/\t/,$_);
         #my ($ensID,$startA,$endA,$startB,$endB,$acc,$name,$type,$o1,$o2,$o3,$bitscore,$evalue,$o4,$clan) = split(/\s+/,$_);
         #print "$ensID,$startA,$endA,$startB,$endB,$acc,$name,$type,$o1,$o2,$o3,$bitscore,$evalue,$o4,$clan\n";
-        $pfam_hits{$acc}{alignment_start} = $startA;
-        $pfam_hits{$acc}{alignment_end} = $endA;
-        $pfam_hits{$acc}{count}++;
-        $pfam_hits{$acc}{description} = $name;
-        $pfam_hits{$acc}{hmm_name} = $acc;
-        $pfam_hits{$acc}{bitscore} = $bitscore;
-        $pfam_hits{$acc}{confidence} = $evalue;
-        $pfam_hits{$acc}{evalue} = $evalue;
+        my $counter = (exists $pfam_counts->{$acc})?$pfam_counts->{$acc}: 1;   
+		$pfam_hits{$acc}{$counter}{alignment_start} = $startA;
+        $pfam_hits{$acc}{$counter}{alignment_end} = $endA;
+        $pfam_hits{$acc}{$counter}{count}++;
+        $pfam_hits{$acc}{$counter}{description} = $name;
+        $pfam_hits{$acc}{$counter}{hmm_name} = $acc;
+        $pfam_hits{$acc}{$counter}{bitscore} = $bitscore;
+        $pfam_hits{$acc}{$counter}{confidence} = $evalue;
+        $pfam_hits{$acc}{$counter}{evalue} = $evalue;
         $pfam_counts->{$acc}++;
     } 
-    #print Dumper $pfam_hits_href;
+    #print Dumper %pfam_hits;
     #exit;
     return \%pfam_hits;
 }
@@ -987,14 +1012,8 @@ sub read_sequence_length{
 	foreach my $id(@{$id_aref}){
     	print "READ_SEQUENCE_LENGTH: ENSEMBLPEP -> $id\n";
 	    my $member = $member_adaptor->fetch_by_source_stable_id("ENSEMBLPEP",$id);
-		my $member_length;
-		if(!$member){
-			warn "Could not get member for $id\n";
-		}
-		else{
-			$member_length = $member->seq_length;
-		}
-		$seqIDLengthMappings_href->{$id} = (defined $member_length)?$member_length:1;
+		my $member_length = $member->seq_length;
+		$seqIDLengthMappings_href->{$id} = $member_length;
 	}
 	print "Found seq length for ".keys(%{$seqIDLengthMappings_href})." ids\n";
 }
@@ -1072,7 +1091,7 @@ while( my $tree = $in->next_tree ) {
  #print Dumper %internalNodesMapping;
 	my $out = new Bio::TreeIO(-file => ">$temp_tree", -format => 'nhx');
     $out->write_tree($tree);
-print "TREEIS: ".$tree->to_string;
+#print $tree->to_string;
 }
 ################################################################################
 ########     Parse as Bio::Phylo::Project
