@@ -13,7 +13,7 @@ my $VERSION = "1.3";
 #-------------------------------------------------------------------------------
 
 # get the user options
-my ( $outfile, $e_seq, $e_dom, $b_seq, $b_dom, $dir, 
+my ( $outfile, $e_seq, $e_dom, $b_seq, $b_dom, $dir, $hmm_file, 
      $clan_overlap, $fasta, $align, $help, $as, $pfamB, 
      $json, $only_pfamB, $cpu );
 
@@ -25,6 +25,7 @@ GetOptions( 'help'         => \$help,
             'b_seq=f'      => \$b_seq,
             'b_dom=f'      => \$b_dom,
             'dir=s'        => \$dir,
+            'hmm_file=s'   => \$hmm_file,
             'clan_overlap' => \$clan_overlap,
             'fasta=s'      => \$fasta,
             'align'        => \$align,
@@ -42,18 +43,18 @@ GetOptions( 'help'         => \$help,
 help() if $help;
 help() unless ( $dir and $fasta ); # required options
 
-my $pfamA;
-if ( $only_pfamB ) {
-  die qq(FATAL: can't use pfamB and only_pfamB option together) if $pfamB;
-  $pfamB=1;
-}
-else {
-  $pfamA=1;
-}
+#my $pfamA;
+#if ( $only_pfamB ) {
+#  die qq(FATAL: can't use pfamB and only_pfamB option together) if $pfamB;
+#  $pfamB=1;
+#}
+#else {
+#  $pfamA=1;
+#}
 
 my @hmmlib;
-push @hmmlib, 'TreeFam.hmm' if $pfamA;
-#push @hmmlib, 'TreeFam-B.hmm' if $pfamB;
+push @hmmlib, $hmm_file;
+#push @hmmlib, 'TreeFam.hmm' if $pfamA;
 
 #-------------------------------------------------------------------------------
 
