@@ -454,6 +454,10 @@ qq(FATAL: the E-value domain cut-off "$args->{-e_dom}" must be positive non-zero
 
   $self->{_hmmlib} = [];
   if ( $args->{-hmmlib} ) {
+
+use Data::Dumper;
+print Dumper($args->{-hmmlib})."\n";
+
     if ( ref $args->{-hmmlib} eq 'ARRAY' ) {
       push @{ $self->{_hmmlib} }, @{ $args->{-hmmlib} };
     }
@@ -465,14 +469,17 @@ qq(FATAL: the E-value domain cut-off "$args->{-e_dom}" must be positive non-zero
     push @{ $self->{_hmmlib} }, "Pfam-A.hmm";
   }
 
+print Dumper($self->{_hmmlib})."\n";
+
   # Now check that the library exists in the data dir!
   foreach my $hmmlib ( @{ $self->{_hmmlib} } ) {
 
+print "DIR:".$self->{_dir} . "/$hmmlib.h3f"."\n";
+
     croak
-      qq(FATAL: can't find $hmmlib and/or $hmmlib binaries in "$args->{-dir}")
+      qq(FATAL: can't find |$hmmlib| and/or $hmmlib binaries in "$args->{-dir}")
       unless (
-      -s $self->{_dir},
-      "/$hmmlib"
+      -s 	 $self->{_dir}, "/$hmmlib"
       and -s $self->{_dir} . "/$hmmlib.h3f"
       and -s $self->{_dir} . "/$hmmlib.h3i"
       and -s $self->{_dir} . "/$hmmlib.h3m"

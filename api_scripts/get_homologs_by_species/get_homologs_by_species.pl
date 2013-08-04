@@ -23,7 +23,7 @@ my $OUT_FILE = "$tmp_dir/homology_list.txt";
 #Get Registry.
 #-------------
 my $registry = 'Bio::EnsEMBL::Registry';
-Bio::EnsEMBL::Registry->load_all("../../registry/production_treefam_reg_conf.pl");
+Bio::EnsEMBL::Registry->load_all("../registry/production_treefam_reg_conf.pl");
 
 #Get Adaptor.
 #------------

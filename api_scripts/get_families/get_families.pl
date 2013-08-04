@@ -35,7 +35,7 @@ $all = 0 if ($hmm || $aln || $seq || $tree);
 #die "all: $all, hmm: $hmm, aln:$aln, seq:$seq, tree: $tree\n";
 
 my $registry = 'Bio::EnsEMBL::Registry';
-Bio::EnsEMBL::Registry->load_all("../../registry/production_treefam_reg_conf.pl");
+Bio::EnsEMBL::Registry->load_all("../registry/production_treefam_reg_conf.pl");
 my $homology_adaptor = $registry->get_adaptor( 'TreeFam', 'Compara', 'Homology' );
 if(!$homology_adaptor){
 	die "Could not load homology_adaptor\n";

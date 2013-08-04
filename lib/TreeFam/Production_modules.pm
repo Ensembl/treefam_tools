@@ -55,6 +55,127 @@ sub get_tree_object{
 	return $tree; 
 }
 
+sub get_pruned_tree{
+	my ($arg_ref) = @_;
+	my $superhash= $arg_ref->{superhash};
+	my $sequence_href = $arg_ref->{sequences_href};
+	my $treefam_name = $arg_ref->{treefam_name};
+	my $tree = $arg_ref->{treeObject};
+
+	my @ids2keep;
+	my %allowed_species_ids = (
+		"10116" => 1,
+		"10090" => 1,
+		"9606" => 1,
+		"9031" => 1,
+		"7955" => 1,
+		"7227" => 1,
+		"6239" => 1,
+		"559292" => 1,
+		"284812" => 1,
+		"3702" => 1,
+
+);
+	print "Getting root node: ";
+	# get root node:
+	my $root = $tree->root;
+
+	my $all_leaves = $root->get_all_leaves();
+	print "Found ".scalar(@{$all_leaves})." leaves";
+	foreach my $leaf (@{$all_leaves}){
+		my ($stable_id, $taxon) = ($leaf->stable_id,$leaf->taxon_id);
+		print "$stable_id: $taxon";
+		push(@ids2keep, $stable_id) if(exists $allowed_species_ids{$taxon});	
+	}
+	print "Found ".scalar(@ids2keep)."";
+	my $ret_tree = $root->keep_nodes_by_taxon_ids(\@ids2keep);
+	print "found tree: $ret_tree\n";
+	my $pruned_tree = $ret_tree->nhx_format();
+	print Dumper $pruned_tree;
+	exit;
+}
+sub get_alignment_information{
+	my ($arg_ref) = @_;
+	my $superhash= $arg_ref->{superhash};
+	my $sequence_href = $arg_ref->{sequences_href};
+	my $treefam_name = $arg_ref->{treefam_name};
+	my $tree = $arg_ref->{treeObject};
+	my $aln_length = $arg_ref->{aln_length};
+
+	print "Getting root node: ";
+	# get root node:
+	my $root = $tree->root;
+	# get all leaves
+	my $nodes = $root->get_all_nodes();
+	print "found ".scalar(@{$nodes})." nodes\n";
+	foreach my $curr_node(@{$nodes}){
+		#print Dumper $curr_node;
+		#exit;
+		my ($name, $node_id, $cigar_line)  = ($curr_node->name, $curr_node->node_id, $curr_node->consensus_cigar_line);
+		#print $name."\t".$node_id."\t".$cigar_line."\n";
+		next if not defined($name);
+		my $binary_pattern = get_binaryPattern4cigar({ cigar_string => $cigar_line, alignment_length => $aln_length, no_of_splits => 100});
+		
+		$sequence_href->{$name}{binary_pattern} = $binary_pattern;
+		print "saving binary pattern for $name: $binary_pattern\n";#print "binary pattern: $binary_pattern\n";	
+		#exit;
+	}
+	# check if 
+	
+	#exit;
+	return 1;
+}
+
+sub get_binaryPattern4cigar{
+	my ($arg_ref) = @_;
+	my $cigar_string = $arg_ref->{cigar_string};
+	my $alignment_length = $arg_ref->{alignment_length};
+	my $no_of_splits = $arg_ref->{no_of_splits};
+	my $binary_pattern;	
+	my $split_size = int($alignment_length / $no_of_splits);
+	print "trying to get pattern for length $alignment_length and split size $split_size\n";
+
+	# expand cigar
+	
+	my @splitted = split(/(\d*\w)/,$cigar_string);
+	#my @splitted = split(/[D-Md-m]+/,$cigar_string);
+	my @expanded_cigar;
+	my $carry_forward;
+	print "found ".scalar(@splitted)." splits\n";
+	foreach my $split(@splitted){
+		print "$split\n";
+		next if $split =~ /^$/;
+		$split =~ /^(\d*)([\w])/;
+		my ($number,$type) = ($1,$2);
+			print "$number and $type\n";
+			if(!$type){ die "problem with line $split\n";}
+			if(!$number){
+				push(@expanded_cigar, $type);
+			}
+			else{
+				for(my $i=0;$i<$number;$i++){
+					push(@expanded_cigar, $type);
+				}
+			}		
+	}
+	my $expanded_string = join("",@expanded_cigar);
+	for(my $i=0;$i<$alignment_length; $i+=$split_size){
+		print "slicing $i\n";
+		my $substring = substr($expanded_string,$i,$split_size);
+		print "found subalignment: $substring\n";
+		my %letter_hash;
+		foreach(split(//, $substring)){
+			$letter_hash{$_}++;
+		}
+	my @sorted = sort { $letter_hash{$a} <=> $letter_hash{$b} } keys %letter_hash; 
+	print "result is ".$sorted[0]."\n";
+	$binary_pattern .= ($sorted[0] eq "M" || $sorted[0] eq "m")? 1 : 0;
+	}
+	#print "expanded cigar = ".join("",@expanded_cigar)."\n";
+return $binary_pattern;
+
+}
+
 sub clean_old_entries{
 	my ($arg_ref) = @_;
 	my $entry = $arg_ref->{entry};
@@ -99,7 +220,7 @@ sub read_gene_tree_statistics{
    my $treeio = Bio::TreeIO->new(-fh => $io,
                                  -format => 'nhx');
   
-    print Dumper $node2gene_count;
+    #print Dumper $node2gene_count;
     return 1; 
 }
 sub get_species_tree_statistics{
@@ -123,7 +244,7 @@ sub get_species_tree_statistics{
     '-file' => $minimal_species_tree,
     '-format' => 'newick',
  )->first;
-       print Dumper $tree; 
+       #print Dumper $tree; 
    #my $proj = parse(
     #'-format' => 'newick',
     #'-file' => $minimal_species_tree,
@@ -223,6 +344,84 @@ sub traverse_species_tree {
 
 }
 }
+
+
+
+sub newickspeciestree2json{
+	my ($arg_ref) = @_;
+	my $superhash= $arg_ref->{superhash};
+	my $sequence_href = $arg_ref->{sequences_href};
+	my $treefam_name = $arg_ref->{treefam_name};
+	my $registry = $arg_ref->{registry};
+	my $newick_tree = $arg_ref->{treeNhx};
+	my $species_tree = $arg_ref->{species_tree};
+	my $species2gene  = $arg_ref->{species2gene};    	
+
+    #open my $nw_tree_out, ">", $input_tree or die "Could not open $input_tree\n";
+    #print {$nw_tree_out} $newick_tree."\n";
+    #close $nw_tree_out || die "Could not close $input_tree\n";
+    #if(!-e $input_tree || ! -s $input_tree){
+    #    warn "[newick2json] Problem saving tree to file $input_tree\n";
+    #    return 0;
+    #} 
+
+
+my $tree = Bio::Phylo::IO->parse(
+    '-file' => $species_tree,
+    '-format' => 'newick',
+ )->first;
+print "species tree here hash has ".keys(%{$sequence_href})." members \n";
+
+my $result = species_tree_traverse({
+                    "node" => $tree->get_root,
+                    "sequence_href" => $sequence_href,
+                    "species2gene" => $species2gene,
+            });
+
+#my $result = traverse({"node"=> $tree->get_root, "sequence_href" => $sequence_href});
+    #$superhash->{"json_tree"} = JSON->new->pretty->encode($result);
+    
+	$superhash->{"json_species_tree"} = JSON->new->encode($result);
+    #unlink($output_tree) if -e $output_tree;
+    return 1;
+
+sub species_tree_traverse {
+    my ($arg_ref) = @_;
+	my $node = $arg_ref->{node};
+	my $sequence_href = $arg_ref->{sequence_href};
+	my $species2gene  = $arg_ref->{species2gene};    	
+	my $node_name = $node->get_name;
+    my @domains_for_seq;
+ 	print "checking species name: : for $node_name: ";
+				#print Dumper $sequence_href->{$node_name};
+			#print Dumper $allNodesMapping{$node_name};
+ 	if(exists $species2gene->{$node_name}){
+		print "present!!!\n";	
+	}
+	else{
+		print "not\n";
+	}
+		my @empty_array;
+		my $result = { 		
+					name=>($node_name)? $node_name:"NaN", 
+					#duplication=> (exists $allNodesMapping{$node_name}{D} && $allNodesMapping{$node_name}{D} eq "Y")?"Y":"N", 
+					taxon=> ($node_name)? $node_name:"NaN", 
+					sequences=>(exists $species2gene->{$node_name})?$species2gene->{$node_name}:\@empty_array,
+		};
+        if ( my @children = @{ $node->get_children } ) {
+			$result->{'children'} = [ map { 
+           		species_tree_traverse({
+                    "node" => $_,
+                    "sequence_href" => $sequence_href,
+                    "species2gene" => $species2gene,
+        	}) 
+            } @children ];
+	}
+	#print Dumper $result;
+
+	return $result;
+}
+}
 sub newick2json{
 	my ($arg_ref) = @_;
 	my $superhash= $arg_ref->{superhash};
@@ -231,6 +430,7 @@ sub newick2json{
 	my $registry = $arg_ref->{registry};
 	my $newick_tree = $arg_ref->{treeNhx};
     my $input_tree = "$treefam_name.in.newick";
+	my $species2gene  = $arg_ref->{species2gene};    	
 
     open my $nw_tree_out, ">", $input_tree or die "Could not open $input_tree\n";
     print {$nw_tree_out} $newick_tree."\n";
@@ -240,7 +440,7 @@ sub newick2json{
         return 0;
     } 
 my $output_tree = "$treefam_name.output.tre";
-my $taxon2species_file = "taxid2species.txt";
+my $taxon2species_file = "species_info.table";
 my $taxon2color_file = "species_info.table";
 my $debug = 0;
 my %leafNodesMapping;
@@ -266,8 +466,14 @@ foreach (@taxids2colors){
 my @taxids2species = `cat $taxon2species_file`;
 foreach (@taxids2species){
 	next if /^taxon_id/;
-	/(\d+)\s+(\w+)/;
-	$taxid2species_hash{$1} = ucfirst($2);
+	#/(\d+)\s+(\w+)/;
+	chomp;
+	#$taxid2species_hash{$1} = ucfirst($2);
+	my ($id,$species_name,$common_name,$color) = split("\t",$_);
+	$species_name =~ s/ /_/g;
+	$taxid2species_hash{$id}{species_name} = ucfirst($species_name);
+	$taxid2species_hash{$id}{common_name} = ucfirst($common_name);
+	print "TAXA:saving $id: $species_name, $common_name\n";
 }
 if(!keys(%taxid2species_hash)){
 	die "problem reading taxid_species information\n";
@@ -281,8 +487,13 @@ if(!read_tree_io({"input_tree"=> $input_tree,
 		})){
 	die "could not read tree $input_tree\n";
 }
+
+unlink($input_tree);
+#if(-e $input_tree){ warn "INPUT TREE STILL THERE\n"}
+#if(-e $output_tree){ warn "OUTPUT TREE STILL THERE\n"}
 my @terminal_ids = keys(%leafNodesMapping);
 my %seqIDLength;
+#unlink($input_tree) if -e $input_tree;
 
 # get color codes
 # have a predefined set of internal nodes
@@ -304,6 +515,7 @@ my $proj = parse(
     '-file' => $output_tree,
     '-as_project' => 1,
 );
+unlink($output_tree) if -e $output_tree;
 my ($forest) = @{ $proj->get_items(_FOREST_) };
 
 my $tree=$forest->next;
@@ -313,6 +525,8 @@ my $result = traverse({
                     "node" => $tree->get_root,
                     "sequence_href" => $sequence_href,
                     "seqIDLength" => \%seqIDLength,
+                    "species2gene" => $species2gene,
+                    "taxid2species_hash" => \%taxid2species_hash,
                     "ID2color" => \%ID2Color,
                     "taxid2color_href" => \%taxid2color_hash
             });
@@ -331,7 +545,9 @@ sub traverse {
 	my $seqIDLength= $arg_ref->{seqIDLength};
 	my $ID2Color= $arg_ref->{ID2Color};
     my $taxid2color_href  = $arg_ref->{taxid2color_href};
-   	my $node_name = $node->get_name;
+    my $taxid2species_href  = $arg_ref->{taxid2species_hash};
+	my $species2gene  = $arg_ref->{species2gene};    	
+	my $node_name = $node->get_name;
     my @domains_for_seq;
    if(exists $leafNodesMapping{$node_name}){
    # add domain information
@@ -351,12 +567,26 @@ sub traverse {
         	}
 		} 
     }
+				print "checking SWISS: for $node_name: ";
+				#print Dumper $sequence_href->{$node_name};
+				#print Dumper $allNodesMapping{$node_name};
  	my $result = { name=>(exists $mapBack2ID{$node_name})? $mapBack2ID{$node_name}:$node_name , 
 					duplication=> (exists $allNodesMapping{$node_name}{D} && $allNodesMapping{$node_name}{D} eq "Y")?"Y":"N", 
-					taxon=> (exists $allNodesMapping{$node_name}{T})? $taxid2species_hash{$allNodesMapping{$node_name}{T}}:"NaN", 
-					bootstrap=>(exists $allNodesMapping{$node_name}{B})?$allNodesMapping{$node_name}{B}:"NaN",
+					taxon=> (exists $allNodesMapping{$node_name}{T})? $taxid2species_hash{$allNodesMapping{$node_name}{T}}{species_name}:"N/A", 
+					bootstrap=>(exists $allNodesMapping{$node_name}{B})?$allNodesMapping{$node_name}{B}:"N/A",
+					
+					common_name=>(exists $taxid2species_href->{$allNodesMapping{$node_name}{T}}{common_name})?$taxid2species_href->{$allNodesMapping{$node_name}{T}}{common_name}:"no common name",
+					
+					binary_alignment=>(exists $sequence_href->{$node_name}{binary_pattern})?$sequence_href->{$node_name}{binary_pattern}:"N/A",
+					uniprot_name=>(exists $sequence_href->{$node_name}{uniprot_hits}{'UniProtKB-ID'})?$sequence_href->{$node_name}{uniprot_hits}{'UniProtKB-ID'}:"N/A",
+					display_label=>(exists $sequence_href->{$node_name}{display_label})?$sequence_href->{$node_name}{display_label}:"N/A",
+					swissprot_gene_name=>(exists $sequence_href->{$node_name}{swissprot_hits}{'gene_name'})?$sequence_href->{$node_name}{swissprot_hits}{'gene_name'}:"N/A",
+					swissprot_protein_name=>(exists $sequence_href->{$node_name}{swissprot_hits}{'protein_name'})?$sequence_href->{$node_name}{swissprot_hits}{'protein_name'}:"N/A",
+					swissprot_lca_gene_name=>(exists $allNodesMapping{$node_name}{'SwissProtGene'})?$allNodesMapping{$node_name}{'SwissProtGene'}:"N/A",
 			};
-                    $result->{type} = "leaf" if exists $leafNodesMapping{$node_name};
+                   #print "adding display_label: ".$sequence_href->{$node_name}{display_label}."\n"; 
+
+					$result->{type} = "leaf" if exists $leafNodesMapping{$node_name};
                     $result->{type} = "node" if not exists $leafNodesMapping{$node_name};
                     #$result->{domains} = \@domains_for_seq if exists $leafNodesMapping{$node_name}; 
 		            $result->{domains} = [];
@@ -373,14 +603,23 @@ sub traverse {
                     $result->{color} = $taxid2color_href->{$allNodesMapping{$node_name}{T}} if exists $taxid2color_href->{$allNodesMapping{$node_name}{T}}; 
                     #$result->{go} = $sequence_href->{$node_name}{go_hits} if exists $sequence_href->{$node_name}{go_hits};
 	
-	
+	## save for building species tree
+		my $species_name = $taxid2species_href->{$allNodesMapping{$node_name}{T}}{species_name};
+		if($species_name && $species_name ne ""){
+			print "SPECIES2GENE for ".$species_name."\n";
+			push(@{$species2gene->{$species_name}}, $result);
+			print "currently have ".$species2gene->{$species_name}."\n";
+			print "SPECIES2GENE has: ".keys(%{$species2gene})." elements\n";
+		}
 	if ( my @children = @{ $node->get_children } ) {
 		$result->{'children'} = [ map { 
            traverse({
                     "node" => $_,
                     "sequence_href" => $sequence_href,
                     "seqIDLength" => \%seqIDLength,
+                    "taxid2species_hash" => $taxid2species_href,
                     "ID2color" => \%ID2Color,
+                    "species2gene" => $species2gene,
                     "taxid2color_href" => $taxid2color_href
         }) 
             } @children ];
@@ -445,6 +684,7 @@ sub read_tree_io{
 	my $out = new Bio::TreeIO(-file => ">$output_tree", -format => 'nhx');
     $out->write_tree($tree);
 }
+	#unlink($input_tree) if -e $input_tree;
 	return (-e $output_tree && -s $output_tree)? 1:undef;
 }
 
@@ -515,6 +755,7 @@ sub get_sequences{
         }
         # taxon ID
         $sequence_hash->{$prot_seq_id}{"taxonID"} = $leaf->taxon_id;
+        $sequence_hash->{$prot_seq_id}{"display_label"} = uc($gene4prot->display_label);
         # Taxon name
         $sequence_hash->{$prot_seq_id}{"taxon_name"} = $species_name;
         $species_name =~ s/\s/_/;
@@ -557,7 +798,7 @@ sub get_sequences{
 		# grep entry from file
 		my $grep_line = "grep ".$_->taxon->taxon_id." id2classification.txt";
 		my $grepped_classification = `$grep_line`;
-		print "grep ".$_->taxon->taxon_id." id2classification.txt\n";
+		#print "grep ".$_->taxon->taxon_id." id2classification.txt\n";
 		chomp($grepped_classification);
         $species_count->{$_->taxon->name}{'classification'} = $grepped_classification;
     }
@@ -567,6 +808,184 @@ sub get_sequences{
     
     #$c->log->debug( "Found " . keys(%species_count) . " species" ) if $c->debug;
     return 1;
+}
+
+
+sub transfer_annotations{
+	my ($arg_ref) = @_;
+    my $treeNhx= $arg_ref->{treeNhx};
+    my $sequences_hash= $arg_ref->{sequences_hash};
+    my $member_adaptor= $arg_ref->{member_adaptor};
+    my $homology_adaptor= $arg_ref->{homology_adaptor};
+	my $treefam_name = $arg_ref->{treefam_name};
+	my %annotation_counter; 
+	my %swissprot_sequences;
+	my $transfer_type = "swissprot-not";	
+	
+    #if($transfer_type eq "swissprot"){
+    	
+		if($transfer_type eq "swissprot"){
+		# collect all sequences with swissprot annotation
+    	foreach my $ensembl_prot_id(keys(%{$sequences_hash})){
+				if(exists $sequences_hash->{$ensembl_prot_id}{'uniprot_hits'}{'UniProtKB-AC'}){
+					my $uniprot_ac = $sequences_hash->{$ensembl_prot_id}{'uniprot_hits'}{'UniProtKB-AC'};
+					#print "have uniprot entry '$uniprot_ac'\n";
+					my $swissprot_hits = &get_swissprot_hits({"id" => $uniprot_ac,  "db_adaptor" => $member_adaptor});	
+					next if !keys(%{$swissprot_hits});
+					$swissprot_sequences{$ensembl_prot_id} = $swissprot_hits;
+					#print "swissprot hits: \n";
+					#print Dumper $swissprot_hits;
+				#	die "Lets stop here\n";
+			}	
+	
+		}
+		}
+		else {
+    		foreach my $ensembl_prot_id(keys(%{$sequences_hash})){
+					my %seq_hash;
+					print "getting display label for $ensembl_prot_id: ".$sequences_hash->{$ensembl_prot_id}{display_label}."\n";
+					my $display_label = $sequences_hash->{$ensembl_prot_id}{display_label};
+					$swissprot_sequences{$ensembl_prot_id}{protein_names} = $display_label; 
+					$swissprot_sequences{$ensembl_prot_id}{gene_names} =  $display_label;
+					$annotation_counter{$display_label}++; 
+					#$swissprot_sequences{$ensembl_prot_id} = \%seq_hash;
+			}
+		}
+		# remove bad annotations. e.g. ones that occur only once
+		foreach my $ensembl_prot_id(keys(%swissprot_sequences)){
+			if($annotation_counter{$swissprot_sequences{$ensembl_prot_id}{protein_names}} <= 1){
+				$swissprot_sequences{$ensembl_prot_id}{protein_names} = ""; 
+				$swissprot_sequences{$ensembl_prot_id}{gene_names} =  "";
+				print "removing annotation for $ensembl_prot_id\n";
+			}
+		}
+		print Dumper %swissprot_sequences;
+		print "Found ".keys(%swissprot_sequences)." sequences with swissprot annotation\n";
+		my %already_annotated;
+		foreach my $ensembl_id(keys(%swissprot_sequences)){
+				# get orthologs
+				print "swissprot sequence: $ensembl_id\n";
+				my ($gene_name, $protein_name) = ($swissprot_sequences{$ensembl_id}{'gene_names'},
+														  $swissprot_sequences{$ensembl_id}{'protein_names'});
+				next if $protein_name eq "";
+				next if $already_annotated{$ensembl_id};
+				my $member = $member_adaptor->fetch_by_source_stable_id('ENSEMBLPEP',$ensembl_id);
+				if(!defined($member) || $member eq ''){
+					warn "Could not get member object for $ensembl_id\n";
+				}
+				my $gene_member = $member->gene_member();
+				# then you get the homologies where the member is involved
+				my $homologies = $homology_adaptor->fetch_all_by_Member($gene_member);
+				warn "Could not get homologies for ".$gene_member->stable_id."\n" if !scalar(@{$homologies});
+				my ($genename4group,$proteinname4group);
+				foreach my $homology (@{$homologies}) {
+				print "HOMMO: ".$homology->description," ", $homology->subtype,"\n";	
+					next if $homology->description =~ /paralog/;
+					foreach my $hom_member (@{$homology->get_all_Members}) {
+						my $orth_prot_id = $hom_member->stable_id;
+						next if $already_annotated{$orth_prot_id};
+						next if $hom_member->stable_id eq $ensembl_id;
+						if($swissprot_sequences{$ensembl_id}{'protein_names'} ne ""){
+							print $hom_member->stable_id."is an ortholog, but already has annotation: ".$swissprot_sequences{$ensembl_id}{'protein_names'}."\n";
+							next;
+						}	
+						# transfer annotation here
+						print "\ttransfer annotation to ".$hom_member->stable_id." with ".$protein_name."\n";
+							$sequences_hash->{$orth_prot_id}{'swissprot_hits'}{'protein_name'} = ($protein_name eq '')? 'NaN': $protein_name;
+							if($gene_name =~ / /){
+								my @split_gene_name = split(/ /,$gene_name);
+								print "only taking first one: ".$split_gene_name[0]."\n";
+								$gene_name = uc($split_gene_name[0]);
+								$genename4group = uc($split_gene_name[0]);
+							}
+							else{ 
+								$gene_name = ($gene_name eq '')? 'NaN': uc($gene_name);
+							}
+							$sequences_hash->{$orth_prot_id}{'swissprot_hits'}{'gene_name'} = $gene_name;
+							$already_annotated{$orth_prot_id}	 = 1; # mark as annotated
+							$proteinname4group = $protein_name;
+						
+						print "collect swiss entries: SWISS: $orth_prot_id:";
+						#print Dumper $sequences_hash->{$orth_prot_id};
+					}
+				}
+			# add annotation of sequence itself
+				$sequences_hash->{$ensembl_id}{'swissprot_hits'}{'protein_name'} = $swissprot_sequences{$ensembl_id}{'protein_name'};
+				#$sequences_hash->{$ensembl_id}{'swissprot_hits'}{'gene_name'} = $genename4group;
+				my $gene_name = $swissprot_sequences{$ensembl_id}{'gene_names'};
+				if($gene_name =~ / /){
+								my @split_gene_name = split(/ /,$gene_name);
+								print "only taking first one: ".$split_gene_name[0]."\n";
+								$gene_name = uc($split_gene_name[0]);
+								$genename4group = uc($split_gene_name[0]);
+							}
+							else{ 
+								$gene_name = ($gene_name eq '')? 'NaN': uc($gene_name);
+							}
+				$sequences_hash->{$ensembl_id}{'swissprot_hits'}{'gene_name'} = $gene_name;
+				#$swissprot_sequences{$ensembl_id}{'gene_names'} = $gene_name;
+				$already_annotated{$ensembl_id}	 = 1; # mark as annotated
+			}
+
+
+	#}
+	#die "for testing we die here\n";	
+
+	# now we could label mrca of 
+  	#print "trying to read tree: $treeNhx\n"; 
+	#my $tree = Bio::Phylo::IO->parse(
+   # 	'-string' => $treeNhx,
+   # 	'-format' => 'Newick',
+ 	#)->first;
+    my $input_tree = "$treefam_name.in.newick";
+	open my $nw_tree_out, ">", $input_tree or die "Could not open $input_tree\n";
+    print {$nw_tree_out} $$treeNhx."\n";
+    close $nw_tree_out || die "Could not close $input_tree\n";
+    if(!-e $input_tree || ! -s $input_tree){
+        warn "[transfer annotation] Problem saving tree to file $input_tree\n";
+        return 0;
+    } 	
+	my $treeio = Bio::TreeIO->new(-format => 'nhx',
+			      -file => $input_tree);
+	my $tree = $treeio->next_tree; 
+	#print Dumper $tree;
+	my %same_annotation_hash;
+	my @terminals = $tree->get_leaf_nodes;
+	#my @terminals = @{ $tree->get_terminals };
+	foreach my $terminal(@terminals){
+		print "Looking at ".$terminal->id."\n";
+		my $gene_name = $sequences_hash->{$terminal->id}{'swissprot_hits'}{'gene_name'};
+		push(@{$same_annotation_hash{$gene_name}}, $terminal);
+		print "added to array: $gene_name, has now ".scalar(@{$same_annotation_hash{$gene_name}})." entries\n";
+	}
+	foreach my $same_annotation(keys(%same_annotation_hash)){
+		my @nodes = @{$same_annotation_hash{$same_annotation}};
+		next if scalar(@nodes) < 2 || $same_annotation eq "";		
+		print "checking annotation $same_annotation with ".scalar(@nodes)." entries \n";
+		my $lca = $tree->get_lca(-nodes => \@nodes);
+		#my $mrca = $tree->get_mrca(\@nodes);
+		#$mrca->set_generic( 'SwissProtGene' => $same_annotation );
+		$lca->set_tag_value('SwissProtGene' , $same_annotation);
+		print "found mrca with ".$lca->id."\n";
+	}
+	my $write2tree = "$treefam_name.nhx";
+    my $out = new Bio::TreeIO(-file => ">$write2tree",
+                          -format => 'nhx');
+    $out->write_tree($tree);
+	my $new_tree = `cat $treefam_name.nhx`;
+	chomp($new_tree);
+	$$treeNhx = $new_tree;
+	unlink("$write2tree");
+	#my $new_tree = Bio::Phylo::IO->unparse(
+    #'-phylo' => $tree,                         
+    #'-format' => 'Newick',
+	#-nhxstyle => 'nhx'
+ #);
+#print $new_tree."\n";
+#die "stopping here\n";
+unlink($input_tree);	
+
+	return 1;
 }
 
 
@@ -602,10 +1021,10 @@ sub get_sequence_annotations{
         my $member_id4prot = $sequences_hash->{$ensembl_prot_id}{"member_id"};
         #$sequences_hash->{$ensembl_prot_id}{"hmmer_hits"} = &get_hmmer_hits({"id" => $member_id4prot, "file_to_search" => $hmmer_scores_file, "db_adaptor" => $db_adaptor});
         $sequences_hash->{$ensembl_prot_id}{"uniprot_hits"} = &get_uniprot_hits({"id" => $ensembl_prot_id, "file_to_search" => $uniprot_file, "db_adaptor" => $db_adaptor});
-        if($ensembl_prot_id =~ /ENSP/){
-            print "checking SINGLE: $ensembl_prot_id\n";
+        if($ensembl_prot_id =~ /ENSP\d+/){
+            #print "checking SINGLE: $ensembl_prot_id\n";
             my @single_gene_hit = `grep -w '$ensembl_prot_id' $single_gene_list`;
-            print "SINGLE: ".join(@single_gene_hit)."\n";
+            #print "SINGLE: ".join(@single_gene_hit)."\n";
             $sequences_hash->{$ensembl_prot_id}{"single_copy_gene"} = scalar(@single_gene_hit)? 1:0;
             $sequences_hash->{$ensembl_prot_id}{"go_hits"} = &get_go_hits({"id" => $ensembl_prot_id, "file_to_search" => $pfam_file, "pfam_counts" => \%{$ext_counts->{"pfam_counts"}}, "db_adaptor" => $db_adaptor});
         }
@@ -620,18 +1039,18 @@ sub get_sequence_annotations{
         push(@seq_array, $ensembl_prot_id);
         push(@seq_array, (exists $sequences_hash->{$ensembl_prot_id}{"hmmer_hits"} && $sequences_hash->{$ensembl_prot_id}{"hmmer_hits"} ne '')?$sequences_hash->{$ensembl_prot_id}{"hmmer_hits"}: "No hits" );
         if(exists $sequences_hash->{$ensembl_prot_id}{"pfam_hits"}){
-                print "$ensembl_prot_id has ".keys(%{$sequences_hash->{$ensembl_prot_id}{"pfam_hits"}})." Pfam hits. \n";
+                #print "$ensembl_prot_id has ".keys(%{$sequences_hash->{$ensembl_prot_id}{"pfam_hits"}})." Pfam hits. \n";
                 foreach my $acc(keys(%{$sequences_hash->{$ensembl_prot_id}{"pfam_hits"}})){
                 	foreach my $domain_hit(keys(%{$sequences_hash->{$ensembl_prot_id}{"pfam_hits"}{$acc}})){
-                    	print "$acc hit has ".$ext_counts->{'pfam_counts'}{$acc}." other sequences (total: ".keys(%{$sequences_hash}).")....";
+                    	#print "$acc hit has ".$ext_counts->{'pfam_counts'}{$acc}." other sequences (total: ".keys(%{$sequences_hash}).")....";
                     	my $ratio = $ext_counts->{"pfam_counts"}{$acc} / keys(%{$sequences_hash});
                     	if ( $ext_counts->{"pfam_counts"}{$acc} && $ratio < 0.05){
-                       		print "SKIP  this entry (ratio: $ratio) \n";
-                        	print "delete this entry ";
+                #       		print "SKIP  this entry (ratio: $ratio) \n";
+                 #       	print "delete this entry ";
                         	#delete($sequences_hash->{$ensembl_prot_id}{"pfam_hits"}{$acc});
                     	}
                     	else{
-                        	print "\n";
+                  #      	print "\n";
                         	push(@pfam_hits, $sequences_hash->{$ensembl_prot_id}{"pfam_hits"}{$acc}{$domain_hit}{"description"});
                     	}
 					}
@@ -653,7 +1072,7 @@ sub get_sequence_annotations{
         #}
         #push(@seq_array, $hgnc_hits_string);
         if(!exists($sequences_hash->{$ensembl_prot_id}{"description"}) ||  !defined($sequences_hash->{$ensembl_prot_id}{"description"}) || $sequences_hash->{$ensembl_prot_id}{"description"} eq ''){
-            print "no description for $ensembl_prot_id\n";
+            #print "no description for $ensembl_prot_id\n";
             push(@seq_array, "No description");
         }
         else{
@@ -679,8 +1098,8 @@ sub get_family_annotations{
 	my $previous_treefam_file = $arg_ref->{previous_treefam_file};
   ## get previous treefam annotations;
     my ($acc,$symbol,$desc,$seed,$full,$date1,$date2,$type,$full_desc,$comment) = &get_previous_treefam_annotation({"id" => $tree->stable_id, "file_to_search" => $previous_treefam_file});
-    $c->{fam_symbol} = $symbol;
-    $c->{fam_description} = $desc;
+    $c->{fam_symbol} = $symbol || "NaN";
+    $c->{fam_description} = $desc || "NaN";
     $c->{fam_n_seed} = $seed;
     $c->{fam_n_full} = $full;
     #$c->{fam_full_description} = $full_desc;
@@ -813,7 +1232,7 @@ sub get_hgnc_hits {
         $hgnc_hits{$app_symbol} = $hgnc_id;
     }
     if(keys(%hgnc_hits)){
-         print Dumper %hgnc_hits;
+         #print Dumper %hgnc_hits;
         #die "finished for now";
     } 
     return  \%hgnc_hits;
@@ -935,6 +1354,25 @@ sub get_uniprot_hits {
     } 
     return \%uniprot_hits;
 }
+sub get_swissprot_hits {
+	my ($arg_ref) = @_;
+	my $id = $arg_ref->{id};
+	my $file_to_search = $arg_ref->{file_to_search};
+    my $db_adaptor = $arg_ref->{db_adaptor};
+    my $extID2seq_sth_ext = $db_adaptor->prepare('select * from swissprot_mapping where entry = ?');
+	$extID2seq_sth_ext->bind_param(1,$id);
+	my $extID2seq_sth = $extID2seq_sth_ext ;
+    
+	$extID2seq_sth->execute() or die "SQL Error: $DBI::errstr\n";
+    my %swissprot_hits;
+### Parse
+	while ( my ($entry,$entry_name,$protein_names,$gene_names) = $extID2seq_sth->fetchrow_array() ){
+        $swissprot_hits{"protein_names"} = $protein_names;
+        $swissprot_hits{"gene_names"} = $gene_names;
+        $swissprot_hits{"entry_name"} = $entry_name;
+    } 
+    return \%swissprot_hits;
+}
 
 sub get_hmmer_hits {
 	my ($arg_ref) = @_;
@@ -961,7 +1399,7 @@ sub get_previous_treefam_annotation {
 	my $file_to_search = $arg_ref->{file_to_search};
     my $grep_command = "grep \"^$id\" $file_to_search";
     my @result_lines = `$grep_command`;
-    print "grep $grep_command\n";
+    #print "grep $grep_command\n";
 ### Parse
     my ($acc,$symbol,$desc,$empty,$seed,$full,$empty2,$date1,$date2,$type,$full_desc,$comment) = split(/\t/,$result_lines[0]);
     #print "$acc,$symbol,$desc,$empty,$seed,$full,$empty2,$date1,$date2,$type,full:$full_desc,$comment\n";

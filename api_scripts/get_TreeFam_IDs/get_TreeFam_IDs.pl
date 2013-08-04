@@ -7,7 +7,7 @@ use TreeFam::SearchHelper;
 use Bio::EnsEMBL::Registry;
 
 my $registry = 'Bio::EnsEMBL::Registry';
-Bio::EnsEMBL::Registry->load_all("../../registry/production_treefam_reg_conf.pl");
+Bio::EnsEMBL::Registry->load_all("/nfs/production/xfam/treefam/treefam_tools/registry/production_treefam_reg_conf.pl");
 
 my $member_adaptor = $registry->get_adaptor( 'TreeFam', 'Compara', 'Member' );
 if(!$member_adaptor){
@@ -29,6 +29,7 @@ close(IDs);
 foreach my $id (@IDs_vec)
 {
 	my $xref_families_hits = TreeFam::SearchHelper::get_member_by_xref({"member_adaptor" => $member_adaptor, "to_search" => $id, "type" => 'external_db_id', "limit" => $limit});
+	print "$id\t$xref_families_hits\n";
 }
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------

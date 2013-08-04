@@ -53,10 +53,10 @@ use Bio::EnsEMBL::Compara::DBSQL::DBAdaptor;
 
 # Master
 Bio::EnsEMBL::Compara::DBSQL::DBAdaptor->new(
-    -host => 'mysql-treefam-prod',
-    -user => 'admin',
-    -pass => '00ABuSzd',
-    -port => 4401,
+    -host => 'mysql-treefam-public',
+    -user => 'treefam_ro',
+    -pass => '',
+    -port => 4418,
     -species => 'TreeFam',
     -dbname => 'treefam_production_9_69',
     #-dbname => 'treefam_homology_67hmm',

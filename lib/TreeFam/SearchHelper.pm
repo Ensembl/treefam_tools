@@ -18,9 +18,9 @@ package TreeFam::SearchHelper;
 
 use strict;
 use warnings;
+use Data::Dumper;
 use TreeFam::HomologyHelper;
 
-print "Mateus testing\n";
 
 sub search_family_with_id{
 	my ($arg_ref) = @_;
@@ -57,13 +57,22 @@ sub search_members_stable_id{
 sub search_members_member_id{
 	my ($db,$to_search) = (@_);
 	my $member_adaptor = $db->get_MemberAdaptor;
- print "searching members with $to_search\n";	
+    print "searching members with $to_search\n";	
+	my $member = $member_adaptor->fetch_by_source_stable_id("undef", $to_search );
+	return $member;
+}
+sub search_members_by_undef_id{
+	my ($arg_ref) = @_;
+	my $member_adaptor= $arg_ref->{'member_adaptor'};
+	my $to_search= $arg_ref->{'to_search'};
+    print "searching members with $to_search\n";	
 	my $member = $member_adaptor->fetch_by_source_stable_id("undef", $to_search );
 	return $member;
 }
 sub get_all_homologs_for_gene{
-	my ($db,$member) = (@_);
-	my $homology_adaptor = $db->get_HomologyAdaptor;
+	my ($arg_ref) = @_;
+	my $member= $arg_ref->{'member'};
+	my $homology_adaptor = $arg_ref->{'homology_adaptor'};
 	my $homologies = $homology_adaptor->fetch_all_by_Member($member);
     return defined($homologies)?$homologies:undef
 }
@@ -92,7 +101,8 @@ sub search_ext_ids{
 #------------------------------------------------------------------------------------
 #------------------------------ MATEUS ----------------------------------------------
 #------------------------------------------------------------------------------------
-sub get_member_by_xref{
+sub get_member_by_xref
+{
 	my ($arg_ref)		= @_;
 	my $member_adaptor	= $arg_ref->{'member_adaptor'};
 	my $to_search		= $arg_ref->{'to_search'};
@@ -114,6 +124,28 @@ sub get_member_by_xref{
 	}
 }
 
+sub is_superTree
+{
+	my ($arg_ref)		= @_;
+	my $member_adaptor	= $arg_ref->{'member_adaptor'};
+	my $TF				= $arg_ref->{'TF'};
+	my $supertree		= 0;
+
+	my $superTree_sth_member = $member_adaptor->prepare('SELECT tree_type FROM gene_tree_root where stable_id = ?');
+	$superTree_sth_member->bind_param(1,$TF);
+	my $superTree_sth = $superTree_sth_member ;
+
+	$superTree_sth->execute() or die "SQL Error: $DBI::errstr\n";
+	#my $sequences = $extID2seq_sth->fetchall_arrayref();
+	while ( my ($tree_type) = $superTree_sth->fetchrow_array())
+	{
+		if ($tree_type eq "supertree")
+		{
+			$supertree = 1;
+		}
+	}
+	return $supertree;
+}
 =begin
 	#my ($dbh,$db,$to_search, $column) = (@_);
 
@@ -142,7 +174,82 @@ sub get_member_by_xref{
 =cut
 #------------------------------------------------------------------------------------
 #------------------------------------------------------------------------------------
+sub get_family_by_member_sequence{
+	my ($arg_ref) = @_;
+	my $to_search = $arg_ref->{'to_search'};
+	my $genetree_adaptor = $arg_ref->{'genetree_adaptor'};
+	my $member_adaptor = $arg_ref->{'member_adaptor'};
+	print "get family by member for $to_search\n";
+	#print Dumper $member_adaptor;
+	my $member = &check_valid_sequence({member_adaptor => $member_adaptor, to_search => $to_search});
 
+
+	#my $member = &search_members_by_undef_id({member_adaptor => $member_adaptor, to_search => $to_search});
+	#my $member = &search_members_member_id($genetree_adaptor, $to_search);
+	#print Dumper $member;
+	if(!$member){
+		print "search by undef member found nothing\n";
+		return undef;
+	}
+	else{
+				print "search by undef member found something!!!! ".$member->taxon_id."\n";
+				my $all_trees = $genetree_adaptor->fetch_all_by_Member($member);
+				my $tree_id = (scalar(@{$all_trees}))? $all_trees->[0]->stable_id: "not in a family";
+		# get gt object
+			return $tree_id;
+	}
+
+	return undef;
+}	
+sub get_wikipedia4species{
+	my ($arg_ref) = @_;
+	my $db_adaptor = $arg_ref->{'db_adaptor'};
+	my $to_search = $arg_ref->{'to_search'};
+	my $extID2seq_sth_family;
+	my $extID2seq_sth_ext;
+	my $extID2seq_sth;
+	print "search using external: '$to_search'\n";
+	$extID2seq_sth_ext = $db_adaptor->prepare('select * from species2wikipedia where ncbi_id= ?');
+	$extID2seq_sth_ext->bind_param(1,$to_search);
+	$extID2seq_sth = $extID2seq_sth_ext ;
+    
+	$extID2seq_sth->execute() or die "SQL Error: $DBI::errstr\n";
+    my @hits;
+	while ( my ($ncbi_id,$wikipedia_id,) = $extID2seq_sth->fetchrow_array() ){
+		#my $genetree = $genetree_adaptor->fetch_by_dbID($gtID);
+		return (defined($wikipedia_id)? $wikipedia_id:undef);
+		#return $genetree;
+	}	
+	return undef;
+}
+sub get_family_by_xref_sequence{
+	my ($arg_ref) = @_;
+	my $db_adaptor = $arg_ref->{'db_adaptor'};
+	my $to_search = $arg_ref->{'to_search'};
+	my $column = $arg_ref->{'column'};
+	my $extID2seq_sth_family;
+	my $extID2seq_sth_ext;
+	my $extID2seq_sth;
+	print "search using external: '$to_search'\n";
+	$extID2seq_sth_ext = $db_adaptor->prepare('select * from xrefID2Sequence where external_db_id= ? or external_db_id_name = ?');
+	$extID2seq_sth_ext->bind_param(1,$to_search);
+	$extID2seq_sth_ext->bind_param(2,$to_search);
+	$extID2seq_sth = $extID2seq_sth_ext ;
+    
+	$extID2seq_sth->execute() or die "SQL Error: $DBI::errstr\n";
+    my @hits;
+	while ( my ($extID,$extName,$dbname,$memberid,$gtID,$gtName,$description) = $extID2seq_sth->fetchrow_array() ){
+		print "$extID,$extName,$dbname,$gtID,$gtName,$description\n";
+	   	my @line_array;
+		my %line_hash = ("ExtID"=>$extID,"extName"=>$extName,"db"=>$dbname,"gtID"=>$gtID,"gtName"=>$gtName, "description" =>$description);	
+		# try to see how long it takes to get member attributes as well
+		#my $genetree_adaptor = $db->get_GeneTreeAdaptor;
+		#my $genetree = $genetree_adaptor->fetch_by_dbID($gtID);
+		return (defined($gtName)? $gtName:undef);
+		#return $genetree;
+	}	
+	return undef;
+}
 sub get_family_by_xref{
 	my ($arg_ref) = @_;
 	my $db_adaptor = $arg_ref->{'db_adaptor'};
@@ -169,11 +276,13 @@ sub get_family_by_xref{
 		return (defined($gtName)? $gtName:undef);
 		#return $genetree;
 	}	
+	return undef;
 }
 # Requires a genetree adaptor
 sub check_valid_family{
 		my ($arg_ref) = @_;
 		my $genetree_adaptor = $arg_ref->{'genetree_adaptor'};
+		my $member_adaptor = $arg_ref->{'member_adaptor'};
 		my $to_search = $arg_ref->{'to_search'};
 		my $tree;
 		if($to_search =~ /^TF\d+$/){
@@ -188,8 +297,13 @@ sub check_valid_family{
 		}
 		else{
 			# is it a member?
-
-			print "\tsearching in ext references with $to_search ...";
+			print "\tsearching in member db with $to_search ...\n";
+			$tree = &get_family_by_member_sequence({member_adaptor => $member_adaptor,  "genetree_adaptor" => $genetree_adaptor, "to_search" => $to_search});
+			if($tree){
+				print "Found something, we can stop here\n";
+				return $tree;
+			}	
+			print "\tsearching in ext references with $to_search ...\n";
 			$tree = &get_family_by_xref({"db_adaptor" => $genetree_adaptor, "to_search" => $to_search});
 			if(defined($tree)){
 				print "\tfound in xref table. redirect to /family/$tree\n";
@@ -197,7 +311,12 @@ sub check_valid_family{
 			}
 			else{
 				# last chance: we assume a sequence id was entered
-				print "not found!!!\n";
+				print "not found!!! now trying xref_sequence\n";
+				$tree = &get_family_by_xref_sequence({"db_adaptor" => $genetree_adaptor, "to_search" => $to_search});
+				if(defined($tree)){
+					print "\tfound in xref sequence table. redirect to /family/$tree\n";
+					return $tree;
+				}
 				return 0;
 			}
 		}
@@ -241,6 +360,94 @@ sub check_valid_sequence{
 	}
 	return ($found_member)?$member : undef;
 }
+
+
+sub get_MemberInformation4seq{
+	my ($arg_ref) = @_;
+	my $member_adaptor = $arg_ref->{'member_adaptor'};
+	my $genetree_adaptor = $arg_ref->{'genetree_adaptor'};
+	my $homology_adaptor = $arg_ref->{'homology_adaptor'};
+	my $to_search = $arg_ref->{'to_search'};
+	print "\tAssumning ensemblID $to_search \n"; 
+	my ($member,$sequence, $sequence_cds,$resultset,$found_member,$prot_member);
+	$member = search_members({"member_adaptor" => $member_adaptor, "to_search" => $to_search});
+	if($member){
+		print "done (found) extract information\n";
+		$found_member = 1;
+		if($member->get_canonical_Member){   # is a protein member
+				$prot_member = $member->get_canonical_Member();
+				print "switched to protein member\n";
+		}
+		#print "get external references now, searching for ".$prot_member->dbID."\n";
+		#my $extIDs = search_xref_hits({"member_adaptor" => $member_adaptor, "to_search" => $prot_member->dbID, "type" => "member"});
+		#push(@{$resultset}, {"xref" => $extIDs});
+		#$resultset->{"xref"} = $extIDs;
+	}
+	else{ 
+		warn  " trying to search xrefs\n";
+		my $extIDs = search_xref_hits({"member_adaptor" => $member_adaptor, "to_search" => $to_search, "type" => "external"});
+		#push(@{$resultset}, {"xref" => $extIDs});
+		$resultset->{"xrefs"} = $extIDs;
+		#print Dumper $extIDs;
+		if(!scalar(@$extIDs)){
+					print "done (Could not find id $to_search in external ids)\n";
+		}
+		else{
+				my $to_search = $extIDs->[0]{"memberId"};
+				print "getting member object for $to_search\n";
+				$member = $member_adaptor->fetch_by_dbID(  $to_search );
+				#print Dumper $member;
+				if(!$member){
+					warn "Could not get member object\n";
+				}
+				else{
+					$found_member = 1;
+				}
+		}
+	}
+	if($found_member){
+		my @members;
+		#push(@members,$member);
+		#my $encoded_members = encode_members({"members" => \@members,"genetree_adaptor" => $genetree_adaptor,"limit" =>20});
+	#push(@{$resultset}, {"member" => $encoded_members});
+		#$resultset->{"member"} = $encoded_members;
+		$resultset->{"member"}{"stable_id"} = $member->stable_id;
+		$resultset->{"member"}{"taxon_name"} = ($member->taxon)->name;
+		$resultset->{"member"}{"taxon_id"} = $member->taxon_id;
+		$resultset->{"member"}{"description"} = defined($member->description)? $member->description: "NaN";
+		my $all_trees = $genetree_adaptor->fetch_all_by_Member($member);
+		$resultset->{"member"}{"family"} = (scalar(@{$all_trees}))? $all_trees->[0]->stable_id: "not in a family";
+	
+		#print "get homologs\n";
+		#my $homologies = TreeFam::HomologyHelper::get_homologs_for_gene({"homology_adaptor" => $homology_adaptor, "genetree_adaptor" => $genetree_adaptor, "source_object" => $member, "type" =>  $type, "homology_type" => $homology_type});
+		#if($homologies){
+		#	#push(@{$resultset}, {"homologies" => $homologies});
+		#	$resultset->{"homologies"} = $homologies;
+		#}
+		if($member->get_canonical_Member){   # is a protein member
+				$prot_member = $member->get_canonical_Member();
+				print "switched to protein member\n";
+			$sequence = $prot_member->sequence();
+			$sequence_cds = $prot_member->sequence_cds();
+		}
+
+	
+	print "results\n";
+	$sequence = ($sequence eq '') ? "NaN": $sequence;
+	$sequence_cds = ($sequence_cds eq '')? "NaN": $sequence_cds;
+	my %seq_hash = ("seq" => $sequence,"molecule"=>"protein","description"=> $member->description );
+    my %seq_cds_hash = ("seq"=>$sequence_cds,"molecule"=>"cds","description"=> $member->description );
+	my @seq_array = [\%seq_hash,\%seq_cds_hash];
+	my %sequences_hash =("sequences" => @seq_array) ;
+	#print Dumper %sequences_hash;
+	#push(@{$resultset}, \%sequences_hash);
+	$resultset->{"sequences"} = {"protein" => \%seq_hash, "cds"=> \%seq_cds_hash};
+	
+	}	
+
+	return $resultset;
+}
+
 
 
 sub get_all_for_sequence_id{
@@ -367,7 +574,13 @@ sub search_xref_hits{
 		$extID2seq_sth_member->bind_param(1,$to_search);
 		$extID2seq_sth = $extID2seq_sth_member ;
 	}
-	else{
+	elsif($column eq "tree"){
+		print "search using member $to_search\n";
+		$extID2seq_sth_member = $member_adaptor->prepare('select * from xrefID2Sequence where gene_tree_stable_id = ?');
+		$extID2seq_sth_member->bind_param(1,$to_search);
+		$extID2seq_sth = $extID2seq_sth_member ;
+	}
+else{
 		die "need to know which column to search in xref\n";
 	}
     
@@ -425,7 +638,7 @@ sub search_xref_families_hits{
 		$encoded_sequences = encode_xrefs({"sequences" => $sequences, "limit" => 100, "type" => "autocomplete"});
 	}
 	else{
-		$encoded_sequences = encode_xrefs({"sequences" => $sequences, "limit" => 100, "type" => "normal"});
+		$encoded_sequences = encode_xrefs({"sequences" => $sequences, "limit" => 1000, "type" => "normal"});
 	}
 	return $encoded_sequences;
 }
@@ -496,7 +709,7 @@ sub search_description{
 	my $member_sth_ext;
 	my $member_sth;
 	print "search using members '$to_search'\n";
-	my $members = $member_adaptor->generic_fetch("MATCH(description) AGAINST ('$to_search')");
+	my $members = $member_adaptor->generic_fetch("MATCH(description) AGAINST (\'+".$to_search."\' IN BOOLEAN MODE)" );
     my @hits;
 	print "\tdone, found ".scalar(@$members)." hits in members. doing some formatting now\n";
 	my $encoded_members = encode_members({"members" => $members,"genetree_adaptor" => $genetree_adaptor,"limit" =>20});
@@ -534,6 +747,7 @@ sub search_members{
 	my ($arg_ref) = @_;
 	my $member_adaptor = $arg_ref->{'member_adaptor'};
 	my $to_search = $arg_ref->{'to_search'};
+	print "getting member $to_search\n";
 	my $member = $member_adaptor->fetch_by_source_stable_id( undef, $to_search );
 	return (defined $member)? $member: undef ;
 }
