@@ -1,10 +1,19 @@
-# treefam_scan.pl,  run at Mon Feb 25 16:38:50 2013
+$VAR1 = [
+          'TreeFam9'
+        ];
+
+$VAR1 = [
+          'TreeFam9'
+        ];
+
+DIR:hmm_lib//TreeFam9.h3f
+# treefam_scan.pl,  run at Wed Nov 11 22:05:37 2015
 #
 # Copyright (c) 2009 Genome Research Ltd
-# Freely distributed under the GNU 
+# Freely distributed under the GNU
 # General Public License
 #
-# Authors: Fabian Schreiber (fs@ebi.ac.uk), Mateus Patricio (mateus@ebi.ac.uk), Jaina Mistry (jm14@sanger.ac.uk), 
+# Authors: Fabian Schreiber (fs@ebi.ac.uk), Mateus Patricio (mateus@ebi.ac.uk), Jaina Mistry (jm14@sanger.ac.uk),
 #          John Tate (jt6@sanger.ac.uk), Rob Finn (rdf@sanger.ac.uk)
 #
 # This is free software; you can redistribute it and/or modify it under
@@ -16,45 +25,100 @@
 # details.
 #
 # You should have received a copy of the GNU General Public License along with
-# this program. If not, see <http://www.gnu.org/licenses/>. 
+# this program. If not, see <http://www.gnu.org/licenses/>.
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 #      query sequence file: example/example_small.fasta
-#        searching against: example/hmm_lib//TreeFam.hmm, with cut off -E 10
+#        searching against: hmm_lib//TreeFam9, with cut off -E 10
 #    resolve clan overlaps: on
 #     predict active sites: off
 # = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = =
 #
 # <seq id> <alignment start> <alignment end> <envelope start> <envelope end> <hmm name> <hmm start> <hmm end> <bit score> <E-value> <significance> <clan>
 
-ENSBTAP00000055460_TF101001   1007   1275    996   1275 TF101001          4   351    557.7    1e-170   0 No_clan  
-ENSBTAP00000055460_TF101001   1018   1267   1017   1270 TF101002          2   267    226.2   1.5e-70   0 No_clan  
-ENSBTAP00000055460_TF101001   1024   1146   1016   1147 TF101005         18   143     86.7     3e-28   0 No_clan  
-ENSBTAP00000055460_TF101001   1030   1154   1025   1157 TF101004         21   149     44.6   2.1e-15   0 No_clan  
-ENSBTAP00000055460_TF101001   1041   1231   1036   1239 TF101006        308   503     66.1   3.9e-22   0 No_clan  
-ENSBTAP00000055460_TF101001   1041   1163   1029   1182 TF101007         36   162     40.0   6.4e-14   0 No_clan  
-CBN16235_TF101002              218    465    215    474 TF101001          4   280    184.3   7.1e-58   0 No_clan  
-CBN16235_TF101002              230    482    230    484 TF101002          1   268    464.0  1.8e-142   0 No_clan  
-CBN16235_TF101002              240    434    238    448 TF101006        293   492     94.3   1.2e-30   0 No_clan  
-CBN16235_TF101002              252    352    237    353 TF101005         35   135    119.6   3.4e-38   0 No_clan  
-CBN16235_TF101002              256    412    248    417 TF101004         35   200     85.1   1.2e-27   0 No_clan  
-CBN16235_TF101002              278    367    268    382 TF101007         60   152     45.8   1.2e-15   0 No_clan  
-CBN16235_TF101002              388    416    387    417 TF101005        175   206      5.9   0.00076   0 No_clan  
-ENSSTOP00000014828_TF101003      1    237      1    237 TF101003         66   321    612.9  2.4e-187   0 No_clan  
-ENSSTOP00000014828_TF101003     13     53      6     55 TF101004         61   101      7.3   0.00043   0 No_clan  
-ENSSTOP00000014828_TF101003     15     58     13     60 TF101008         81   124     42.1   9.8e-15   0 No_clan  
-ENSSTOP00000014828_TF101003     88    197     85    213 TF101008        144   271     20.9   2.4e-08   0 No_clan  
-ENSSTOP00000014828_TF101003    145    156    142    164 TF101004        188   199      1.6     0.023   0 No_clan  
-ENSGMOP00000016550_TF101004     12    291     12    291 TF101004          1   310    567.5  1.3e-173   0 No_clan  
-ENSGMOP00000016550_TF101004     25    165     20    172 TF101002          7   147     65.0   8.9e-22   0 No_clan  
-ENSGMOP00000016550_TF101004     25    164     23    201 TF101007          7   158     45.2   1.7e-15   0 No_clan  
-ENSGMOP00000016550_TF101004     32    143     25    154 TF101001         36   148     58.4   8.3e-20   0 No_clan  
-ENSGMOP00000016550_TF101004     37    109     29    169 TF101006        301   372     31.9     8e-12   0 No_clan  
-ENSGMOP00000016550_TF101004     47    150     32    155 TF101005         40   143     58.4     1e-19   0 No_clan  
-ENSGMOP00000016550_TF101004    186    204    185    205 TF101001        191   209     -2.8      0.25   0 No_clan  
-ENSTBEP00000011205_TF101006      7    309      7    312 TF101006          1   316    737.2  1.2e-224   0 No_clan  
-ENSTBEP00000011205_TF101006    366    495    363    499 TF101006        373   506    321.3   3.7e-99   0 No_clan  
-ENSTBEP00000011205_TF101006    375    494    373    495 TF101002        101   233     51.1   1.4e-17   0 No_clan  
-ENSTBEP00000011205_TF101006    380    393    378    402 TF101001        129   142     -1.6      0.11   0 No_clan  
-ENSTBEP00000011205_TF101006    427    494    424    495 TF101001        180   259     38.9   6.3e-14   0 No_clan  
-ENSTBEP00000011205_TF101006    629    784    625    786 TF101006        650   809    239.3   2.1e-74   0 No_clan  
-DappuP303046_TF101007           20    362     18    367 TF101007          3   410    331.6  4.1e-102   0 No_clan  
+ENSBTAP00000055460_TF101001      1   1276      1   1276 TF101001         10   400    472.7  7.4e-142   0 No_clan
+ENSBTAP00000055460_TF101001    210    331    190    340 TF335896        182   308      9.5      0.46   0 No_clan
+ENSBTAP00000055460_TF101001    346    463    335    480 TF335896        167   285     12.7      0.05   0 No_clan
+ENSBTAP00000055460_TF101001    493    637    472    644 TF335896        178   299      5.9       5.4   0 No_clan
+ENSBTAP00000055460_TF101001    515   1164    502   1271 TF101005         17   465    112.1   2.7e-32   0 No_clan
+ENSBTAP00000055460_TF101001    877   1203     57   1253 TF342174        108   346    125.2   3.4e-36   0 No_clan
+ENSBTAP00000055460_TF101001    984   1270    955   1275 TF101002        182   470    263.6     4e-78   0 No_clan
+ENSBTAP00000055460_TF101001   1010   1243    995   1262 TF101009        281   531     45.1   4.2e-12   0 No_clan
+ENSBTAP00000055460_TF101001   1018   1235    995   1260 TF332057         82   306    110.3   1.2e-31   0 No_clan
+ENSBTAP00000055460_TF101001   1023   1206   1011   1217 TF101004        121   310     79.3   3.1e-22   0 No_clan
+ENSBTAP00000055460_TF101001   1026   1261   1015   1275 TF101006        283   525     97.8   5.6e-28   0 No_clan
+ENSBTAP00000055460_TF101001   1031   1205   1007   1254 TF101013         30   221     18.5   0.00055   0 No_clan
+ENSBTAP00000055460_TF101001   1032   1158   1014   1173 TF342871        383   511     41.4   3.4e-11   0 No_clan
+ENSBTAP00000055460_TF101001   1035   1244   1020   1246 TF101007        173   342     55.6   3.5e-15   0 No_clan
+ENSBTAP00000055460_TF101001   1049   1109   1049   1181 TF322999          1    61     24.9   1.4e-05   0 No_clan
+CBN16235_TF101002               12    497      1    499 TF101002         42   482    419.2  2.7e-125   0 No_clan
+CBN16235_TF101002               12    414      5    420 TF101005        131   514    148.9     2e-43   0 No_clan
+CBN16235_TF101002               13    224      3    283 TF321435       1286  1477      3.8       7.2   0 No_clan
+CBN16235_TF101002               14    223      4    420 TF314342        857  1068     17.2   0.00061   0 No_clan
+CBN16235_TF101002               15    222      3    281 TF326075        521   695      5.2       4.5   0 No_clan
+CBN16235_TF101002               19    168      3    277 TF320116        532   649      5.1       4.2   0 No_clan
+CBN16235_TF101002               21    318      1    323 TF312824       1247  1470      4.4       1.6   0 No_clan
+CBN16235_TF101002               24    249      3    322 TF313318        147   367      6.4       2.2   0 No_clan
+CBN16235_TF101002               36    289      2    376 TF315847         98   342      6.8         1   0 No_clan
+CBN16235_TF101002               48    436      7    481 TF342174         18   365    172.4   1.7e-50   0 No_clan
+CBN16235_TF101002               48    246      2    290 TF329606        314   475      5.6       6.3   0 No_clan
+CBN16235_TF101002               77    223      8    431 TF352172       2334  2472      5.0       1.5   0 No_clan
+CBN16235_TF101002               83    473      3    490 TF101001         75   384    226.3   4.7e-67   0 No_clan
+CBN16235_TF101002              105    374     82    414 TF101007         34   300     55.5   3.8e-15   0 No_clan
+CBN16235_TF101002              106    363     77    381 TF342871        303   502     59.2   1.5e-16   0 No_clan
+CBN16235_TF101002              110    412     78    429 TF101004         55   302    113.8   1.1e-32   0 No_clan
+CBN16235_TF101002              202    463    151    485 TF101009        260   540     76.2   1.6e-21   0 No_clan
+CBN16235_TF101002              237    322    207    327 TF101013         22   106     21.0   9.5e-05   0 No_clan
+CBN16235_TF101002              240    448    229    461 TF101006        283   492    119.8   1.3e-34   0 No_clan
+CBN16235_TF101002              249    413    100    431 TF332057         99   272     88.5     5e-25   0 No_clan
+CBN16235_TF101002              263    406    263    417 TF322999          1   118    125.9     1e-36   0 No_clan
+ENSSTOP00000014828_TF101003      1    236      1    237 TF101003        132   368    479.5  7.3e-144   0 No_clan
+ENSSTOP00000014828_TF101003      1    225      1    237 TF101013         54   289    135.9   1.5e-39   0 No_clan
+ENSSTOP00000014828_TF101003      2    229      1    237 TF101010         65   306    124.8   5.3e-36   0 No_clan
+ENSSTOP00000014828_TF101003      2    196      1    213 TF101011        112   315     75.7     3e-21   0 No_clan
+ENSSTOP00000014828_TF101003      2     53      1     54 TF101014         98   149     49.0   3.5e-13   0 No_clan
+ENSSTOP00000014828_TF101003      2     53      1     55 TF101009        324   375     10.3      0.14   0 No_clan
+ENSSTOP00000014828_TF101003      2     69      1    236 TF105953        126   191      9.8      0.26   0 No_clan
+ENSSTOP00000014828_TF101003      5    215      1    235 TF101008         67   278     92.8   1.9e-26   0 No_clan
+ENSSTOP00000014828_TF101003      6    193      1    201 TF326813        125   332     29.4   4.5e-07   0 No_clan
+ENSSTOP00000014828_TF101003      6     53      3     55 TF101002        259   306      5.2       9.1   0 No_clan
+ENSSTOP00000014828_TF101003      7     58      4     71 TF101004        162   213     18.3    0.0011   0 No_clan
+ENSSTOP00000014828_TF101003      7     58      2    235 TF342174        202   253     14.2     0.017   0 No_clan
+ENSSTOP00000014828_TF101003    139    197     83    210 TF101002        380   437      5.4       7.6   0 No_clan
+ENSSTOP00000014828_TF101003    140    172    135    237 TF101014        238   276     14.7    0.0082   0 No_clan
+ENSSTOP00000014828_TF101003    171    223    157    233 TF314511        239   290     15.0     0.011   0 No_clan
+ENSGMOP00000016550_TF101004      1    291      1    291 TF101004         95   385    442.6  1.6e-132   0 No_clan
+ENSGMOP00000016550_TF101004     11    189      1    189 TF342871        360   538    208.7   9.8e-62   0 No_clan
+ENSGMOP00000016550_TF101004     20    249     16    287 TF342174        159   385    104.5   6.3e-30   0 No_clan
+ENSGMOP00000016550_TF101004     20    246     12    257 TF101002        215   429     94.0     1e-26   0 No_clan
+ENSGMOP00000016550_TF101004     23    155      9    169 TF101005        320   452     86.2   1.9e-24   0 No_clan
+ENSGMOP00000016550_TF101004     24    255     12    268 TF101001        145   362     88.4   3.4e-25   0 No_clan
+ENSGMOP00000016550_TF101004     25    213     21    285 TF101007        152   352     56.6   1.9e-15   0 No_clan
+ENSGMOP00000016550_TF101004     31    255     20    262 TF332057         93   308     60.2   1.9e-16   0 No_clan
+ENSGMOP00000016550_TF101004     36    174     24    231 TF101006        290   427     43.5   1.5e-11   0 No_clan
+ENSGMOP00000016550_TF101004     47    174     21    250 TF101013         41   183     13.8     0.015   0 No_clan
+ENSGMOP00000016550_TF101004     53    162     49    224 TF101009        316   432     25.1   4.5e-06   0 No_clan
+ENSGMOP00000016550_TF101004     53    119     53    138 TF322999          1    62     17.3     0.003   0 No_clan
+ENSGMOP00000016550_TF101004     62    127     21    136 TF101003        134   199     14.6     0.012   0 No_clan
+ENSGMOP00000016550_TF101004     68    291     67    291 TF342871        703   923    215.4   9.5e-64   0 No_clan
+ENSTBEP00000011205_TF101006      5    309      2    312 TF101006          3   306    570.2  7.8e-171   0 No_clan
+ENSTBEP00000011205_TF101006     24     74     16     94 TF325020         18    67     17.6    0.0014   0 No_clan
+ENSTBEP00000011205_TF101006     24     71     20     79 TF322479        139   186     10.4      0.17   0 No_clan
+ENSTBEP00000011205_TF101006     25     71     12    118 TF322006         88   137     15.8    0.0052   0 No_clan
+ENSTBEP00000011205_TF101006     28     75     12     88 TF313746         50    97     10.5      0.14   0 No_clan
+ENSTBEP00000011205_TF101006     30     76     29     94 TF329795          2    47     13.0     0.028   0 No_clan
+ENSTBEP00000011205_TF101006     87    116     84    138 TF315257        484   511     14.2    0.0058   0 No_clan
+ENSTBEP00000011205_TF101006    365    496    362    503 TF101006        362   493    248.3   1.7e-73   0 No_clan
+ENSTBEP00000011205_TF101006    371    460    368    479 TF101004        211   304     12.8      0.05   0 No_clan
+ENSTBEP00000011205_TF101006    374    494    372    501 TF101002        312   433     75.3   4.9e-21   0 No_clan
+ENSTBEP00000011205_TF101006    374    494    371    500 TF101001        238   357     53.8   1.1e-14   0 No_clan
+ENSTBEP00000011205_TF101006    380    464    373    473 TF342174        261   347     27.8   1.2e-06   0 No_clan
+ENSTBEP00000011205_TF101006    430    493    425    499 TF101009        461   524     11.5     0.062   0 No_clan
+ENSTBEP00000011205_TF101006    629    782    622    785 TF101006        626   761    124.4   5.2e-36   0 No_clan
+DappuP303046_TF101007           16    326      4    364 TF101007        144   454    312.6   4.5e-93   0 No_clan
+DappuP303046_TF101007           21     84     13    266 TF314999        181   233     11.4     0.068   0 No_clan
+DappuP303046_TF101007           24    272     15    335 TF101004        121   354     15.7    0.0064   0 No_clan
+DappuP303046_TF101007           52    263     28    297 TF101001        167   356     17.6     0.001   0 No_clan
+DappuP303046_TF101007           67    127     54    196 TF101009        326   372     15.4     0.004   0 No_clan
+DappuP303046_TF101007           74    231     27    342 TF332057        130   279     11.9     0.087   0 No_clan
+DappuP303046_TF101007           82    240     69    329 TF342174        214   358     11.0      0.15   0 No_clan
+DappuP303046_TF101007           84    184     82    235 TF101005        376   465     13.1     0.025   0 No_clan

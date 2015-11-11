@@ -32,10 +32,18 @@ hmmpress TreeFam9
 
 Back to `treefam_tools/treefam_scan/`, run:
 ```
-perl treefam_scan.pl -fasta example/example_small.fasta -dir hmm_lib/ -hmm_file TreeFam9 > example/output.tab
+perl treefam_scan.pl -fasta example/example_small.fasta -dir hmm_lib/ -hmm_file TreeFam9
 ```
 
 > Use the same name in `-hmm_file` as in the above `hmmpress` command
+
+You'll get a tabular output similar to `example/output.tab`.
+
+Each query gene found in the input Fasta file will be listed in the first
+column, with the HMM (the family) it has hits with in the sixth column.
+Columns 2-5 represent the coordinates of the hit on the query; columns 7-8
+the coordinates of the hit on the HMM. Finally, columns 9 and 10 tell the
+significance of the hit: bit-score and e-value.
 
 ## Help:
 
