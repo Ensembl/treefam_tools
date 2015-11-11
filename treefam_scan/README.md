@@ -1,7 +1,8 @@
 
 # Sequence search in TreeFam database.
 
-> Note that we have tested this script with HMMer version 3.0
+> Note that we have tested this script with HMMer version 3.0. It may not
+> work with version 3.1
 
 
 ## First, clone the TreeFam github:
