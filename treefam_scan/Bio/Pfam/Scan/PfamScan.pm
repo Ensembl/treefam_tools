@@ -34,7 +34,6 @@ use Bio::Pfam::HMM::HMMResultsIO;
 use Bio::Pfam::Active_site::as_search;
 use Bio::SimpleAlign;
 use Bio::Pfam::Scan::Seq;
-use Data::Printer;
 
 use Carp;
 use IPC::Run qw( start finish );
